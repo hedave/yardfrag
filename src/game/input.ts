@@ -33,6 +33,8 @@ export class Input {
   private joyY = 0;
   private fireTouch = false;
   locked = false;
+  /** True after the browser rejects pointer lock so look/fire still work. */
+  lockDenied = false;
   private unbind: Array<() => void> = [];
 
   constructor(
@@ -65,12 +67,12 @@ export class Input {
     this.unbind.push(() => window.removeEventListener("keyup", ku));
 
     const mm = (e: MouseEvent) => {
-      if (!this.locked) return;
-      this.lookDx += e.movementX;
-      this.lookDy += e.movementY;
+      if (this.locked || (this.lockDenied && (this.firing || this.adsMouse))) {
+        this.lookDx += e.movementX;
+        this.lookDy += e.movementY;
+      }
     };
     const md = (e: MouseEvent) => {
-      if (!this.locked) return;
       if (e.button === 0) {
         this.firing = true;
         this.firePressed = true;
@@ -95,7 +97,7 @@ export class Input {
       e.preventDefault();
     };
     const wheel = (e: WheelEvent) => {
-      if (!this.locked) return;
+      if (!this.locked && !this.lockDenied) return;
       this.cycle += e.deltaY > 0 ? 1 : -1;
     };
     document.addEventListener("mousemove", mm);
@@ -113,9 +115,15 @@ export class Input {
       const next = document.pointerLockElement === this.canvas;
       if (this.locked && !next) this.lockLost = true;
       this.locked = next;
+      if (next) this.lockDenied = false;
     };
     document.addEventListener("pointerlockchange", plc);
     this.unbind.push(() => document.removeEventListener("pointerlockchange", plc));
+    const ple = () => {
+      this.lockDenied = true;
+    };
+    document.addEventListener("pointerlockerror", ple);
+    this.unbind.push(() => document.removeEventListener("pointerlockerror", ple));
 
     this.bindTouch();
   }
@@ -125,9 +133,12 @@ export class Input {
     const req = this.canvas.requestPointerLock();
     if (req && typeof req.catch === "function") {
       void req.catch(() => {
-        /* browser may require a click on the canvas itself */
+        this.lockDenied = true;
       });
     }
+    window.setTimeout(() => {
+      if (!this.locked) this.lockDenied = true;
+    }, 400);
   }
 
   exitLock(): void {
@@ -135,7 +146,9 @@ export class Input {
   }
 
   isTouch(): boolean {
-    return window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+    // `ontouchstart` is on desktop Chrome too — that was skipping pointer lock
+    // and covering the yard with the mobile overlay, so look/fire died.
+    return window.matchMedia("(pointer: coarse)").matches && navigator.maxTouchPoints > 0;
   }
 
   beginFrame(): void {

@@ -98,6 +98,9 @@ interface BotMind {
   aimYaw: number;
   aimPitch: number;
   ads: boolean;
+  stuck: number;
+  lastX: number;
+  lastZ: number;
 }
 
 export class Game {
@@ -129,6 +132,7 @@ export class Game {
   private hipFov = DEFAULT_HIP_FOV;
   private lastStrafe = 0;
   private adsAudio = false;
+  private lockGrace = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -157,7 +161,7 @@ export class Game {
     this.resize();
     canvas.addEventListener("click", () => {
       void this.sfx.resume();
-      if (this.phase === "playing") this.input.requestLock();
+      if (this.phase === "playing") this.armLock();
     });
   }
 
@@ -234,10 +238,13 @@ export class Game {
         aimYaw: bot.yaw,
         aimPitch: 0,
         ads: false,
+        stuck: 0,
+        lastX: bot.x,
+        lastZ: bot.z,
       };
       this.place(bot);
     }
-    this.input.requestLock();
+    this.armLock();
     this.ui.banner("TEND THE YARD");
   }
 
@@ -256,14 +263,21 @@ export class Game {
     this.phase = "playing";
     this.ui.hideMenu();
     this.ui.setScoreboard(this.boardOn, this.rows(), this.arena?.title ?? "");
-    this.input.requestLock();
+    this.armLock();
   }
 
   private pause(): void {
     if (this.phase !== "playing") return;
     this.phase = "paused";
     this.input.exitLock();
+    this.cancelCharge(this.player());
+    this.sfx.stopCharge();
     this.ui.showMenu("pause");
+  }
+
+  private armLock(): void {
+    this.lockGrace = 0.45;
+    this.input.requestLock();
   }
 
   private endMatch(title: string): void {
@@ -417,10 +431,12 @@ export class Game {
       return;
     }
 
-    if (this.input.pause || this.input.lockLost) this.pause();
+    if (this.lockGrace > 0) this.lockGrace -= dt;
+    if (this.input.pause) this.pause();
+    else if (this.input.lockLost && this.lockGrace <= 0) this.pause();
     if (this.input.tabToggle) this.boardOn = !this.boardOn;
 
-    if (this.phase === "playing") {
+    if (this.phase === "playing" || this.phase === "deathcam") {
       this.timeLeft -= dt;
       this.sessionSeconds += dt;
       if (this.timeLeft <= 0) {
@@ -659,7 +675,11 @@ export class Game {
     } else {
       const ways = this.arena!.waypoints;
       if (ways.length && mind.nextWander <= 0) {
-        mind.way = (mind.way + 1 + Math.floor(Math.random() * 3)) % ways.length;
+        const near = ways
+          .map((_, i) => i)
+          .filter((i) => Math.abs(ways[i]!.y - f.y) < 1.4);
+        const pool = near.length > 0 ? near : ways.map((_, i) => i);
+        mind.way = pool[Math.floor(Math.random() * pool.length)]!;
         mind.nextWander = 1.4 + Math.random() * 2;
       }
       const w = ways[mind.way] ?? ways[0];
@@ -677,6 +697,17 @@ export class Game {
       mind.ads = false;
       f.adsWant = false;
       f.weap.ads = stepAds(f.weap.ads, false, FEEL[f.weap.id].adsTime, dt);
+    }
+    const moved = Math.hypot(f.x - mind.lastX, f.z - mind.lastZ);
+    if (moved < 0.07 && Math.hypot(f.vx, f.vz) > 0.4) mind.stuck += dt;
+    else mind.stuck = 0;
+    mind.lastX = f.x;
+    mind.lastZ = f.z;
+    if (mind.stuck > 0.55) {
+      if (f.grounded) f.vy = JUMP_V * 0.9;
+      mind.way = (mind.way + 1) % Math.max(1, this.arena!.waypoints.length);
+      mind.nextWander = 0.4;
+      mind.stuck = 0;
     }
     if (f.weap.mag <= 0) this.startReload(f);
   }
@@ -1029,7 +1060,7 @@ export class Game {
       this.place(you);
       this.phase = "playing";
       this.ui.setDeath(false);
-      this.input.requestLock();
+      this.armLock();
     }
   }
 
