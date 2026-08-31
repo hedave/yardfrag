@@ -178,17 +178,19 @@ export function createViewmodel(id: WeaponId): THREE.Group {
     const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.2, 0.09), clay);
     grip.position.set(0, -0.16, 0.02);
     g.add(grip);
-    const rearL = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.014), iron);
-    rearL.position.set(-0.028, 0.108, -0.1);
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.028, 0.05), cedar);
+    hood.position.set(0, 0.09, -0.08);
+    const rearL = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.07, 0.016), iron);
+    rearL.position.set(-0.03, 0.122, -0.1);
     const rearR = rearL.clone();
-    rearR.position.x = 0.028;
-    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.01, 0.014), iron);
-    bridge.position.set(0, 0.084, -0.1);
-    const front = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.048, 0.01), iron);
-    front.position.set(0, 0.1, -0.94);
-    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.01, 6, 6), clay);
-    bead.position.set(0, 0.128, -0.94);
-    irons.add(rearL, rearR, bridge, front, bead);
+    rearR.position.x = 0.03;
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.012, 0.016), iron);
+    bridge.position.set(0, 0.09, -0.1);
+    const front = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.012), iron);
+    front.position.set(0, 0.102, -0.94);
+    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), clay);
+    bead.position.set(0, 0.134, -0.94);
+    irons.add(hood, rearL, rearR, bridge, front, bead);
   } else if (id === "hose") {
     const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.32, 8), clay);
     tank.rotation.z = Math.PI / 2;
@@ -201,10 +203,10 @@ export function createViewmodel(id: WeaponId): THREE.Group {
     const grip = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.2, 0.1), cedar);
     grip.position.set(0, -0.16, 0.04);
     g.add(grip);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.038, 0.007, 8, 16), iron);
-    ring.position.set(0, 0.072, -0.18);
-    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), clay);
-    bead.position.set(0, 0.07, -0.56);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.01, 8, 18), iron);
+    ring.position.set(0, 0.078, -0.16);
+    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), clay);
+    bead.position.set(0, 0.076, -0.56);
     irons.add(ring, bead);
   } else {
     const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.032, 1.18, 8), tin);
@@ -218,12 +220,12 @@ export function createViewmodel(id: WeaponId): THREE.Group {
     collar.rotation.x = Math.PI / 2;
     collar.position.set(0, 0, -0.08);
     g.add(collar);
-    const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.006, 8, 18), iron);
-    hoop.position.set(0, 0.078, -0.06);
-    const pin = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.04, 0.008), iron);
-    pin.position.set(0, 0.072, -1.02);
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.009, 6, 6), clay);
-    tip.position.set(0, 0.094, -1.02);
+    const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.009, 8, 20), iron);
+    hoop.position.set(0, 0.082, -0.04);
+    const pin = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.05, 0.01), iron);
+    pin.position.set(0, 0.078, -1.02);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), clay);
+    tip.position.set(0, 0.108, -1.02);
     irons.add(hoop, pin, tip);
   }
 
