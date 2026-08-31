@@ -20,7 +20,7 @@ export const POTTING = {
   fog: 0xe0b070,
   floor: 0xd2b07a,
   plaster: 0xf3e4c4,
-  wainscot: 0x1f6b48,
+  wainscot: 0x2a8a52,
   teak: 0x8a4e24,
   leaf: 0x2f9e4a,
   clay: 0xe24a1c,
@@ -42,7 +42,7 @@ export const CISTERN = {
   skyHorizon: 0x2a4a68,
   fog: 0x152838,
   floor: 0x4a5568,
-  wall: 0x243044,
+  wall: 0x3a4e64,
   tin: 0x8fd4de,
   brass: 0xd4a429,
   concrete: 0xa8b2be,
@@ -53,7 +53,7 @@ export const CISTERN = {
   cloth: 0x7ec8d4,
   key: 0xc8d8ff,
   fillSky: 0x6a88b8,
-  fillGround: 0x1a2028,
+  fillGround: 0x243038,
   lamp: 0xffb36a,
   moon: 0xe8eefc,
   rim: 0xa8c4e8,
@@ -78,9 +78,9 @@ export function mapFog(id: MapId): number {
 }
 
 export function mapExposure(id: MapId): number {
-  return id === "potting" ? 1.16 : 0.94;
+  return id === "potting" ? 1.2 : 1.08;
 }
 
 export function mapEnvIntensity(id: MapId): number {
-  return id === "potting" ? 0.58 : 0.26;
+  return id === "potting" ? 0.7 : 0.42;
 }

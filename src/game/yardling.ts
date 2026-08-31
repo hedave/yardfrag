@@ -7,8 +7,8 @@ const bodyGeo = new THREE.BoxGeometry(0.62, 0.78, 0.4);
 const limbGeo = new THREE.BoxGeometry(0.14, 0.56, 0.14);
 const bootGeo = new THREE.BoxGeometry(0.18, 0.42, 0.18);
 const eyeGeo = new THREE.SphereGeometry(0.06, 6, 6);
-const sashGeo = new THREE.BoxGeometry(0.7, 0.2, 0.48);
-const hullGeo = new THREE.BoxGeometry(0.78, 1.82, 0.58);
+const sashGeo = new THREE.BoxGeometry(0.72, 0.22, 0.5);
+const potHullGeo = new THREE.CylinderGeometry(0.32, 0.38, 0.48, 8);
 const chevGeo = new THREE.ConeGeometry(0.12, 0.2, 4);
 
 export function createYardling(name: string, bodyColor: number): THREE.Group {
@@ -44,17 +44,16 @@ export function createYardling(name: string, bodyColor: number): THREE.Group {
     fog: false,
   });
 
-  const hull = new THREE.Mesh(hullGeo, outlineMat);
-  hull.name = "outline";
-  hull.position.y = 0.92;
-  hull.scale.setScalar(1.055);
-  hull.castShadow = false;
-  g.add(hull);
-
   const pot = new THREE.Mesh(potGeo, potMat);
   pot.position.y = 1.52;
   pot.castShadow = true;
   g.add(pot);
+  const potHull = new THREE.Mesh(potHullGeo, outlineMat);
+  potHull.name = "outline";
+  potHull.position.y = 1.52;
+  potHull.scale.setScalar(1.12);
+  potHull.castShadow = false;
+  g.add(potHull);
 
   const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.08, 8), potMat);
   rim.position.y = 1.74;

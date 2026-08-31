@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { CISTERN, POTTING } from "./palette";
 import { rail, stairs, Yard, type Arena } from "./world";
 import type { MapId } from "./types";
@@ -8,8 +9,8 @@ export function buildMap(id: MapId): Arena {
 
 function buildPotting(): Arena {
   const y = new Yard("potting", "Potting Hall");
-  y.fogNear = 30;
-  y.fogFar = 92;
+  y.fogNear = 20;
+  y.fogFar = 54;
   y.bounds = { minX: -27, maxX: 27, minZ: -19, maxZ: 19 };
   y.killY = -4;
 
@@ -25,10 +26,12 @@ function buildPotting(): Arena {
   y.box(0, H / 2, D / 2, W, H, wall, y.m.cedar, { minimap: "#F3E4C4", tile: 3.2 });
   y.box(-W / 2, H / 2, 0, wall, H, D, y.m.cedar, { minimap: "#F3E4C4", tile: 3.2 });
   y.box(W / 2, H / 2, 0, wall, H, D, y.m.cedar, { minimap: "#F3E4C4", tile: 3.2 });
-  y.box(0, 1.05, -D / 2 + 0.42, W - 2, 2.1, 0.22, y.m.moss, { collide: false, tile: 1.8 });
-  y.box(0, 1.05, D / 2 - 0.42, W - 2, 2.1, 0.22, y.m.moss, { collide: false, tile: 1.8 });
-  y.box(-W / 2 + 0.42, 1.05, 0, 0.22, 2.1, D - 2, y.m.moss, { collide: false, tile: 1.8 });
-  y.box(W / 2 - 0.42, 1.05, 0, 0.22, 2.1, D - 2, y.m.moss, { collide: false, tile: 1.8 });
+  y.box(0, 1.05, -D / 2 + 0.42, W - 2, 2.1, 0.22, y.m.moss, { collide: false, tile: 1.8, ao: 0.18 });
+  y.box(0, 1.05, D / 2 - 0.42, W - 2, 2.1, 0.22, y.m.moss, { collide: false, tile: 1.8, ao: 0.18 });
+  y.box(-W / 2 + 0.42, 1.05, 0, 0.22, 2.1, D - 2, y.m.moss, { collide: false, tile: 1.8, ao: 0.18 });
+  y.box(W / 2 - 0.42, 1.05, 0, 0.22, 2.1, D - 2, y.m.moss, { collide: false, tile: 1.8, ao: 0.18 });
+  y.box(0, 0.06, -D / 2 + 0.9, W - 3, 0.12, 1.1, y.m.night, { collide: false, cast: false, ao: 0.1 });
+  y.box(0, 0.06, D / 2 - 0.9, W - 3, 0.12, 1.1, y.m.night, { collide: false, cast: false, ao: 0.1 });
 
   y.box(0, H + 0.2, 0, W, 0.4, D, y.m.tin, { receive: true, tile: 4 });
   for (const x of [-16, -8, 0, 8, 16]) {
@@ -46,10 +49,10 @@ function buildPotting(): Arena {
   highWindows(y, 0, H * 0.62, -D / 2 + 0.38, W - 6, 2.4, 0.08, true);
   highWindows(y, 0, H * 0.62, D / 2 - 0.38, W - 6, 2.4, 0.08, true);
 
-  y.box(-8, 1.6, -6, wall, 3.2, 16, y.m.moss, { minimap: "#1F6B48" });
-  y.box(-8, 4.6, -6, wall, 2.8, 16, y.m.moss);
-  y.box(10, 1.6, 8, 14, 3.2, wall, y.m.moss, { minimap: "#1F6B48" });
-  y.box(10, 4.6, 8, 14, 2.8, wall, y.m.moss);
+  y.box(-8, 1.6, -6, wall, 3.2, 16, y.m.moss,     { minimap: "#2A8A52", ao: 0.22 });
+  y.box(-8, 4.6, -6, wall, 2.8, 16, y.m.moss, { ao: 0.22 });
+  y.box(10, 1.6, 8, 14, 3.2, wall, y.m.moss, { minimap: "#2A8A52", ao: 0.22 });
+  y.box(10, 4.6, 8, 14, 2.8, wall, y.m.moss, { ao: 0.22 });
 
   for (const x of [-16, -4, 8, 18]) {
     y.box(x, 4.6, -12, 0.55, 9.2, 0.55, y.m.concrete, { minimap: "#DDD2B4" });
@@ -68,8 +71,8 @@ function buildPotting(): Arena {
   rail(y, 12.2, 4.55, -4, 0.12, 18, y.m.night);
   y.box(18, 4.18, -4, 11.4, 0.08, 0.12, y.m.brass, { collide: false });
 
-  y.box(-1, 0.38, -1, 6.4, 0.76, 2.1, y.m.moss, { minimap: "#1F6B48" });
-  y.box(-1, 0.38, 2.4, 6.4, 0.76, 2.1, y.m.moss, { minimap: "#1F6B48" });
+  y.box(-1, 0.38, -1, 6.4, 0.76, 2.1, y.m.moss, { minimap: "#2A8A52", ao: 0.2 });
+  y.box(-1, 0.38, 2.4, 6.4, 0.76, 2.1, y.m.moss, { minimap: "#2A8A52", ao: 0.2 });
   y.box(-18, 0.7, 8, 4.4, 1.4, 1.6, y.m.night, { minimap: "#8A4E24" });
   y.box(-18, 0.55, 11.2, 3.2, 1.1, 2.4, y.m.straw);
   y.box(4, 0.85, -12, 3.6, 1.7, 1.3, y.m.concrete, { minimap: "#DDD2B4" });
@@ -102,15 +105,15 @@ function buildPotting(): Arena {
   y.box(6, 6.6, 4, 0.04, 1.6, 0.04, y.m.brass, { collide: false, cast: false });
   y.box(-12, 6.8, -6, 0.04, 1.4, 0.04, y.m.brass, { collide: false, cast: false });
 
-  y.lamp(-12, 7.4, -6, 7.2, POTTING.lamp);
-  y.lamp(6, 7.4, 4, 6.8, POTTING.lamp);
-  y.lamp(18, 7.6, -8, 5.6, POTTING.lamp);
-  y.lamp(-18, 7.2, 10, 6.2, POTTING.lamp);
+  y.lamp(-12, 7.4, -6, 9.4, POTTING.lamp);
+  y.lamp(6, 7.4, 4, 8.8, POTTING.lamp);
+  y.lamp(18, 7.6, -8, 7.4, POTTING.lamp);
+  y.lamp(-18, 7.2, 10, 8.2, POTTING.lamp);
 
-  y.hemi(POTTING.fillSky, POTTING.fillGround, 0.72);
-  y.keyLight(POTTING.key, 1.55, 10, 20, 8, 30);
-  y.fillLight(POTTING.fillSky, 0.32, -14, 10, -8);
-  y.fillLight(POTTING.rim, 0.22, 4, 8, -16);
+  y.hemi(POTTING.fillSky, POTTING.fillGround, 0.58);
+  y.keyLight(POTTING.key, 1.85, 12, 22, 9, 30);
+  y.fillLight(POTTING.fillSky, 0.4, -16, 9, -10);
+  y.fillLight(POTTING.rim, 0.28, 2, 7, -18);
 
   y.spawn(-20, 0, -10, 0.4);
   y.spawn(20, 4.55, -10, Math.PI);
@@ -170,8 +173,8 @@ function highWindows(
 
 function buildCistern(): Arena {
   const y = new Yard("cistern", "Cistern Roofs");
-  y.fogNear = 26;
-  y.fogFar = 108;
+  y.fogNear = 16;
+  y.fogFar = 62;
   y.bounds = { minX: -32, maxX: 32, minZ: -26, maxZ: 26 };
   y.killY = -5;
 
@@ -229,15 +232,15 @@ function buildCistern(): Arena {
     y.pot(px, pz, py, s);
   }
 
-  y.lamp(-16, 6.4, -8, 4.8, CISTERN.lamp);
-  y.lamp(2, 7.6, 10, 5.1, CISTERN.lamp);
-  y.lamp(16, 8.4, -6, 4.6, CISTERN.lamp);
-  y.lamp(-2, 2.6, 0, 3.4, CISTERN.lamp);
+  y.lamp(-16, 6.4, -8, 6.8, CISTERN.lamp);
+  y.lamp(2, 7.6, 10, 7.2, CISTERN.lamp);
+  y.lamp(16, 8.4, -6, 6.4, CISTERN.lamp);
+  y.lamp(-2, 2.6, 0, 5.2, CISTERN.lamp);
 
-  y.hemi(CISTERN.fillSky, CISTERN.fillGround, 0.38);
-  y.keyLight(CISTERN.key, 1.05, -14, 24, -12, 36);
-  y.fillLight(CISTERN.rim, 0.28, 16, 10, 10);
-  y.fillLight(CISTERN.lamp, 0.08, 0, 6, 4);
+  y.hemi(CISTERN.fillSky, CISTERN.fillGround, 0.7);
+  y.keyLight(CISTERN.key, 0.92, -14, 24, -12, 36);
+  y.fillLight(CISTERN.rim, 0.48, 16, 12, 12);
+  y.fillLight(CISTERN.lamp, 0.16, 0, 8, 4);
 
   y.spawn(-16, 5.46, -8, 0.5);
   y.spawn(2, 6.56, 10, Math.PI);
@@ -286,8 +289,18 @@ function shed(
   for (let i = -2; i <= 2; i++) {
     y.box(x + i * (sx / 5), h + 0.34, z, 0.1, 0.1, sz + 0.9, y.m.tin, { collide: false, tile: 1 });
   }
-  y.box(x - sx / 2 + 0.12, h * 0.42, z, 0.14, h * 0.72, 1.4, y.m.night, { collide: false });
-  y.box(x + sx / 2 - 0.08, h * 0.62, z + sz * 0.18, 0.06, 0.9, 1.2, y.m.glass, { collide: false, cast: false });
+  y.box(x - sx / 2 + 0.12, h * 0.42, z, 0.14, h * 0.72, 1.4, y.m.night, { collide: false, ao: 0.2 });
+  const pane = y.box(x + sx / 2 - 0.08, h * 0.62, z + sz * 0.18, 0.06, 0.9, 1.2, y.m.glass, {
+    collide: false,
+    cast: false,
+  });
+  if (pane.material instanceof THREE.MeshStandardMaterial) {
+    const glow = pane.material.clone();
+    glow.emissive.setHex(CISTERN.lamp);
+    glow.emissiveIntensity = 0.85;
+    glow.opacity = 0.55;
+    pane.material = glow;
+  }
   y.box(x - sx / 2 + 0.2, 0.08, z - sz / 2 + 0.2, 0.55, 0.16, 0.55, y.m.concrete, { collide: false });
   y.box(x + sx / 2 - 0.2, 0.08, z + sz / 2 - 0.2, 0.55, 0.16, 0.55, y.m.concrete, { collide: false });
   y.box(x + sx * 0.28, h + 0.55, z - sz * 0.2, 0.7, 0.55, 0.7, y.m.clay, { collide: false });

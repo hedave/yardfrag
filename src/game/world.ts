@@ -93,12 +93,12 @@ function fillNoise(
 function plasterMap(color: number, seed: number): THREE.CanvasTexture {
   return paint(256, seed, (ctx, n, s) => {
     fillNoise(ctx, n, s, color, 18);
-    ctx.globalAlpha = 0.07;
-    for (let y = 0; y < s; y += 18 + n() * 10) {
+    ctx.globalAlpha = 0.16;
+    for (let y = 0; y < s; y += 16 + n() * 10) {
       ctx.fillStyle = n() > 0.5 ? "#ffffff" : "#c8b090";
-      ctx.fillRect(0, y, s, 2);
+      ctx.fillRect(0, y, s, 3);
     }
-    ctx.globalAlpha = 0.12;
+    ctx.globalAlpha = 0.2;
     ctx.strokeStyle = "#c4b49a";
     for (let i = 0; i < 8; i++) {
       ctx.beginPath();
@@ -117,7 +117,7 @@ function woodMap(color: number, seed: number): THREE.CanvasTexture {
     ctx.fillRect(0, 0, s, s);
     for (let x = 0; x < s; x++) {
       const wobble = Math.sin(x * 0.09 + n() * 0.4) * 10;
-      const shade = 0.78 + n() * 0.34;
+      const shade = 0.62 + n() * 0.5;
       ctx.fillStyle = `rgb(${r * shade},${g * shade},${b * shade})`;
       ctx.fillRect(x, 0, 1, s);
       if (x % 42 < 2) {
@@ -135,8 +135,8 @@ function tileMap(color: number, grout: string, seed: number): THREE.CanvasTextur
     fillNoise(ctx, n, s, color, 14);
     const step = 32;
     ctx.strokeStyle = grout;
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.72;
     for (let i = 0; i <= s; i += step) {
       ctx.beginPath();
       ctx.moveTo(i, 0);
@@ -157,7 +157,7 @@ function tinMap(color: number, seed: number): THREE.CanvasTexture {
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fillRect(0, 0, s, s);
     for (let y = 0; y < s; y++) {
-      const rib = 0.72 + 0.38 * Math.abs(Math.sin((y / s) * Math.PI * 14));
+      const rib = 0.55 + 0.55 * Math.abs(Math.sin((y / s) * Math.PI * 12));
       const speck = (n() - 0.5) * 10;
       ctx.fillStyle = `rgb(${r * rib + speck},${g * rib + speck},${b * rib + speck})`;
       ctx.fillRect(0, y, s, 1);
@@ -291,7 +291,7 @@ function tileBoxUVs(geo: THREE.BoxGeometry, sx: number, sy: number, sz: number, 
   uv.needsUpdate = true;
 }
 
-function shadeBoxAO(geo: THREE.BufferGeometry, sy: number): void {
+function shadeBoxAO(geo: THREE.BufferGeometry, sy: number, amount = 0.48): void {
   geo.computeVertexNormals();
   const pos = geo.attributes.position;
   const nrm = geo.attributes.normal;
@@ -299,10 +299,10 @@ function shadeBoxAO(geo: THREE.BufferGeometry, sy: number): void {
   const h = Math.max(0.02, sy);
   for (let i = 0; i < pos.count; i++) {
     const t = THREE.MathUtils.clamp((pos.getY(i) + h * 0.5) / h, 0, 1);
-    let ao = 0.58 + 0.42 * Math.pow(t, 0.5);
+    let ao = 1 - amount * (1 - Math.pow(t, 0.45));
     const ny = nrm.getY(i);
-    if (ny < -0.45) ao *= 0.68;
-    else if (ny > 0.7) ao = Math.min(1, ao + 0.08);
+    if (ny < -0.45) ao *= 0.62;
+    else if (ny > 0.7) ao = Math.min(1, ao + 0.1);
     colors[i * 3] = ao;
     colors[i * 3 + 1] = ao;
     colors[i * 3 + 2] = ao;
@@ -361,9 +361,9 @@ function mats(id: MapId): MatBag {
     cedar: std(CISTERN.wall, { map: clapMap(CISTERN.wall, 22), roughness: 0.8, envMapIntensity: 0.22 }),
     tin: std(CISTERN.tin, {
       map: tinMap(CISTERN.tin, 32),
-      roughness: 0.28,
-      metalness: 0.72,
-      envMapIntensity: 1.15,
+      roughness: 0.42,
+      metalness: 0.48,
+      envMapIntensity: 0.95,
     }),
     clay: std(CISTERN.rust, { map: speckleMap(CISTERN.rust, 42, 36), roughness: 0.58, envMapIntensity: 0.35 }),
     moss: std(CISTERN.puddle, {
@@ -430,11 +430,11 @@ export class Yard {
     sy: number,
     sz: number,
     mat: THREE.Material,
-    opts: { collide?: boolean; minimap?: string; receive?: boolean; cast?: boolean; tile?: number } = {},
+    opts: { collide?: boolean; minimap?: string; receive?: boolean; cast?: boolean; tile?: number; ao?: number } = {},
   ): THREE.Mesh {
     const geo = new THREE.BoxGeometry(sx, sy, sz);
     tileBoxUVs(geo, sx, sy, sz, opts.tile ?? 2.6);
-    shadeBoxAO(geo, sy);
+    shadeBoxAO(geo, sy, opts.ao);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(cx, cy, cz);
     mesh.castShadow = opts.cast !== false;
@@ -536,7 +536,9 @@ export class Yard {
     sun.shadow.camera.top = span * 0.78;
     sun.shadow.camera.bottom = -span * 0.78;
     sun.shadow.camera.updateProjectionMatrix();
+    sun.target.position.set(0, 1.2, 0);
     this.group.add(sun);
+    this.group.add(sun.target);
     this.lights.push(sun);
     return sun;
   }
@@ -631,10 +633,28 @@ export class Yard {
         starPos[i * 3 + 2] = Math.sin(a) * Math.cos(e) * r;
       }
       starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+      const starDot = document.createElement("canvas");
+      starDot.width = starDot.height = 16;
+      const sctx = starDot.getContext("2d")!;
+      const sg = sctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+      sg.addColorStop(0, "rgba(255,255,255,1)");
+      sg.addColorStop(0.45, "rgba(220,230,255,0.7)");
+      sg.addColorStop(1, "rgba(220,230,255,0)");
+      sctx.fillStyle = sg;
+      sctx.fillRect(0, 0, 16, 16);
+      const starTex = new THREE.CanvasTexture(starDot);
       this.group.add(
         new THREE.Points(
           starGeo,
-          new THREE.PointsMaterial({ color: 0xe8eefc, size: 0.55, sizeAttenuation: true, fog: false }),
+          new THREE.PointsMaterial({
+            map: starTex,
+            color: 0xe8eefc,
+            size: 0.9,
+            sizeAttenuation: true,
+            fog: false,
+            transparent: true,
+            depthWrite: false,
+          }),
         ),
       );
     }

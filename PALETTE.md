@@ -21,7 +21,7 @@ Late sun through glass. Peach zenith, amber horizon, lamps as warm practicals. C
 | Sky / fog | `#FFE2B0` zenith · `#F2C48A` · `#E8A868` horizon / `#E0B070` fog | Peach haze. Fog starts farther than a tutorial cube so mid-yard still has chroma. |
 | Floor | `#D2B07A` | Sand tile with grout; lighter than wainscot. |
 | Plaster walls | `#F3E4C4` | High-value planes, vertex AO at the skirting. |
-| Wainscot / beds | `#1F6B48` / `#2F9E4A` | Dark/mid green so floor ≠ wall ≠ prop. |
+| Wainscot / beds | `#2A8A52` / `#2F9E4A` | Mid green so floor ≠ wall ≠ prop, and the beds do not crush to black. |
 | Teak mezzanine | `#8A4E24` | Only large wood. Grain + underside AO. |
 | Clay pots | `#E24A1C` | Props, not bots. |
 | Key / fill / rim | `#FFD080` sun, `#9EB8D8` cool fill, `#FFE8C4` warm rim | Split temperature. Exposure ~1.16. |
@@ -33,8 +33,8 @@ Moon key, indigo-teal dusk, amber lamps only as points. Tin is the bright plane;
 | Slot | Hex | Use |
 | --- | --- | --- |
 | Sky / fog | `#0C1C34` zenith · `#17304C` · `#2A4A68` horizon / `#152838` fog | Indigo dusk. Obvious in two seconds vs peach hall. |
-| Courtyard | `#4A5568` | Slate. Not dirt. |
-| Shed walls | `#243044` | Dark blue-slate, clapboard, AO in the eaves. |
+| Courtyard | `#4A5568` | Slate. Not dirt. Moon fill keeps midtones so sheds do not become a void. |
+| Shed walls | `#3A4E64` | Blue-slate clapboard that still reads under moon fill, AO in the eaves. |
 | Tin roofs | `#8FD4DE` | Pale cyan, corrugated; moon spec catches the key. |
 | Brass walks | `#D4A429` | Warm accent on a cool map. |
 | Key / fill / rim | `#C8D8FF` moon key, `#6A88B8` fill, `#A8C4E8` rim | Amber lamps only as warm points. Exposure ~0.94 so night stays night. |
