@@ -29,6 +29,9 @@ export interface Persist {
   sensitivity: number;
   volume: number;
   invertY: boolean;
+  adsSensitivity: number;
+  adsToggle: boolean;
+  fov: number;
   stats: PersistStats;
 }
 

@@ -19,6 +19,7 @@
 
       <div id="hurt"></div>
       <div id="flash"></div>
+      <div id="vignette"></div>
 
       <div id="hud" class="hidden">
         <div id="compass">
@@ -33,6 +34,7 @@
           <span class="ch-dot"></span>
         </div>
         <div id="hitmarker"></div>
+        <div id="headpip"></div>
         <div id="killfeed"></div>
         <div id="match-meta">
           <div id="timer">6:00</div>
@@ -80,7 +82,7 @@
             <tbody id="board-body"></tbody>
           </table>
         </div>
-        <div id="hint" class="hidden">click the yard to look · Tab or B for the board</div>
+        <div id="hint" class="hidden">click the yard to look · RMB hold to sight · Tab or B for the board</div>
       </div>
 
       <div id="touch" class="hidden">
@@ -89,6 +91,7 @@
           <div id="joy-stick"></div>
         </div>
         <button type="button" id="btn-fire">FRAG</button>
+        <button type="button" id="btn-ads">SIGHT</button>
         <button type="button" id="btn-jump">UP</button>
         <button type="button" id="btn-sprint">RUN</button>
         <button type="button" id="btn-reload">RELOAD</button>
@@ -107,7 +110,7 @@
             <div class="brand-kicker">backyard arena</div>
             <h1>YARDFRAG</h1>
             <p class="tag">
-              dusk, dirt, and bad aim. original geometry. local bots.
+              dusk, dirt, and two aims. original geometry. local bots.
             </p>
           </div>
 
@@ -152,12 +155,24 @@
               <input id="rng-sens" type="range" min="0.25" max="2.4" step="0.05" />
             </label>
             <label class="field">
+              Sight feel <span id="ads-val">0.85</span>
+              <input id="rng-ads" type="range" min="0.35" max="1.4" step="0.05" />
+            </label>
+            <label class="field">
+              Field of view <span id="fov-val">80</span>
+              <input id="rng-fov" type="range" min="70" max="100" step="1" />
+            </label>
+            <label class="field">
               Volume <span id="vol-val">70%</span>
               <input id="rng-vol" type="range" min="0" max="1" step="0.01" />
             </label>
             <label class="check">
               <input id="chk-invert" type="checkbox" />
               Invert look Y
+            </label>
+            <label class="check">
+              <input id="chk-ads-toggle" type="checkbox" />
+              Toggle sight (click RMB) instead of hold
             </label>
             <div class="row">
               <button type="button" class="btn" id="btn-settings-back">

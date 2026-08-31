@@ -27,18 +27,20 @@ npm run preview
 
 ## Play
 
-- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Jump** Space · **Sprint** Shift
+- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse hold · **Jump** Space · **Sprint** Shift
 - **Reload** R · **Weapons** 1 / 2 / 3 or scroll
 - **Scoreboard** Tab · **Pause** Esc
 - First to 20 frags or 6 minutes. Five yardling bots, free-for-all.
+
+Hip fire and sight are two different aims: hip is a wide cone (crosshair opens with bloom, move, and jump). Hold RMB to bring the tool to its yard-iron, drop FOV, slow the look, and tighten the cone. Sprint blocks full-accuracy fire; reload drops you out of sight.
 
 ### Weapons
 
 | Tool | Feel |
 | --- | --- |
-| **Clipper** | Hitscan hedge shears. Full-auto, modest spread. |
-| **Scatterhose** | Seed-pellet shotgun. Tight range, eight pellets. |
-| **Stake** | Trellis needle. Hold to charge and zoom, release to fire. |
+| **Clipper** | Hitscan hedge shears. Full-auto hip spray; sight for mid-yard taps. Recoil climbs. |
+| **Scatterhose** | Seed-pellet shotgun. Hip is the close cone; sight tightens the washer-ring. |
+| **Stake** | Trellis needle. LMB hold charges, RMB sights / zooms. Charge no longer is the zoom. |
 
 ### Yards
 
@@ -47,7 +49,7 @@ npm run preview
 
 ### Settings
 
-Sensitivity, volume, and invert-Y persist in `localStorage` with career stats (frags, falls, time, matches).
+Look feel, sight feel (ADS multiplier), field of view, hold vs toggle sight, volume, and invert-Y persist in `localStorage` with career stats (frags, falls, time, matches).
 
 ### Mobile
 

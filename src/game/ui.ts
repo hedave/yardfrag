@@ -18,7 +18,9 @@ export class UI {
   readonly deathBanner = document.getElementById("death-banner")!;
   readonly killfeed = document.getElementById("killfeed")!;
   readonly hitmarker = document.getElementById("hitmarker")!;
+  readonly headpip = document.getElementById("headpip")!;
   readonly crosshair = document.getElementById("crosshair")!;
+  readonly vignette = document.getElementById("vignette")!;
   readonly hurt = document.getElementById("hurt")!;
   readonly flashEl = document.getElementById("flash")!;
   readonly center = document.getElementById("center-msg")!;
@@ -74,25 +76,37 @@ export class UI {
     this.selMap.onchange = () => this.onPreview?.(this.selMap.value as MapId);
 
     const sens = document.getElementById("rng-sens") as HTMLInputElement;
+    const ads = document.getElementById("rng-ads") as HTMLInputElement;
+    const fov = document.getElementById("rng-fov") as HTMLInputElement;
     const vol = document.getElementById("rng-vol") as HTMLInputElement;
     const inv = document.getElementById("chk-invert") as HTMLInputElement;
+    const toggle = document.getElementById("chk-ads-toggle") as HTMLInputElement;
     const emit = () => {
       this.persist.sensitivity = Number(sens.value);
+      this.persist.adsSensitivity = Number(ads.value);
+      this.persist.fov = Number(fov.value);
       this.persist.volume = Number(vol.value);
       this.persist.invertY = inv.checked;
+      this.persist.adsToggle = toggle.checked;
       this.syncSettingsLabels();
       this.onSettings?.(this.persist);
     };
     sens.oninput = emit;
+    ads.oninput = emit;
+    fov.oninput = emit;
     vol.oninput = emit;
     inv.onchange = emit;
+    toggle.onchange = emit;
   }
 
   loadPersist(p: Persist): void {
     this.persist = p;
     (document.getElementById("rng-sens") as HTMLInputElement).value = String(p.sensitivity);
+    (document.getElementById("rng-ads") as HTMLInputElement).value = String(p.adsSensitivity);
+    (document.getElementById("rng-fov") as HTMLInputElement).value = String(p.fov);
     (document.getElementById("rng-vol") as HTMLInputElement).value = String(p.volume);
     (document.getElementById("chk-invert") as HTMLInputElement).checked = p.invertY;
+    (document.getElementById("chk-ads-toggle") as HTMLInputElement).checked = p.adsToggle;
     this.syncSettingsLabels();
     this.refreshCareer();
   }
@@ -161,11 +175,12 @@ export class UI {
       .join("");
   }
 
-  vitals(hp: number, weap: WeaponState, charging: number): void {
+  vitals(hp: number, weap: WeaponState, charging: number, ads = 0): void {
     const def = WEAPONS[weap.id];
     (document.getElementById("hp-fill") as HTMLElement).style.width = `${Math.max(0, hp)}%`;
     document.getElementById("hp-num")!.textContent = String(Math.ceil(hp));
-    document.getElementById("weap-name")!.textContent = def.name;
+    document.getElementById("weap-name")!.textContent =
+      ads > 0.55 ? `${def.name} · SIGHT` : def.name;
     document.getElementById("ammo-mag")!.textContent =
       weap.reloading > 0 ? "..." : String(weap.mag);
     document.getElementById("ammo-res")!.textContent = String(weap.reserve);
@@ -192,11 +207,23 @@ export class UI {
     while (this.killfeed.children.length > 6) this.killfeed.lastElementChild?.remove();
   }
 
-  hit(head: boolean): void {
+  hit(head: boolean, headHeight = 1.5): void {
     this.hitmarker.classList.add("show");
+    this.hitmarker.classList.toggle("head", head);
     this.crosshair.classList.add("hit");
-    this.hitmarker.style.borderColor = head ? "#7ea35a" : "#e8d5a3";
-    this.hitT = 0.12;
+    this.hitmarker.style.borderColor = head ? "#F5FF3D" : "#ffffff";
+    this.headpip.classList.toggle("head", head);
+    this.headpip.classList.add("show");
+    const lift = Math.max(-28, Math.min(36, (1.55 - headHeight) * 42));
+    this.headpip.style.transform = `translate(-50%, calc(-50% + ${lift.toFixed(1)}px))`;
+    this.hitT = head ? 0.2 : 0.14;
+  }
+
+  setAim(ads: number, gap: number): void {
+    this.crosshair.style.setProperty("--gap", `${gap.toFixed(1)}px`);
+    this.crosshair.classList.toggle("ads", ads > 0.55);
+    this.crosshair.style.opacity = String(1 - Math.min(0.92, ads * 1.05));
+    if (this.vignette) this.vignette.style.opacity = String(ads * 0.55);
   }
 
   hurtFlash(): void {
@@ -230,8 +257,9 @@ export class UI {
     if (this.hitT > 0) {
       this.hitT -= dt;
       if (this.hitT <= 0) {
-        this.hitmarker.classList.remove("show");
+        this.hitmarker.classList.remove("show", "head");
         this.crosshair.classList.remove("hit");
+        this.headpip.classList.remove("show", "head");
       }
     }
     if (this.msgT > 0) {
@@ -251,6 +279,8 @@ export class UI {
 
   private syncSettingsLabels(): void {
     document.getElementById("sens-val")!.textContent = this.persist.sensitivity.toFixed(2);
+    document.getElementById("ads-val")!.textContent = this.persist.adsSensitivity.toFixed(2);
+    document.getElementById("fov-val")!.textContent = String(Math.round(this.persist.fov));
     document.getElementById("vol-val")!.textContent =
       `${Math.round(this.persist.volume * 100)}%`;
   }

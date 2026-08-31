@@ -10,12 +10,10 @@ export interface WeaponDef {
   rpm: number;
   damage: number;
   pellets: number;
-  spread: number;
   range: number;
   auto: boolean;
   charge: boolean;
   chargeTime: number;
-  zoomFov: number | null;
 }
 
 export const WEAPONS: Record<WeaponId, WeaponDef> = {
@@ -29,12 +27,10 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     rpm: 540,
     damage: 18,
     pellets: 1,
-    spread: 0.012,
     range: 90,
     auto: true,
     charge: false,
     chargeTime: 0,
-    zoomFov: null,
   },
   hose: {
     id: "hose",
@@ -46,12 +42,10 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     rpm: 78,
     damage: 12,
     pellets: 8,
-    spread: 0.09,
     range: 28,
     auto: false,
     charge: false,
     chargeTime: 0,
-    zoomFov: null,
   },
   stake: {
     id: "stake",
@@ -63,12 +57,10 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     rpm: 48,
     damage: 92,
     pellets: 1,
-    spread: 0,
     range: 140,
     auto: false,
     charge: true,
     chargeTime: 0.72,
-    zoomFov: 36,
   },
 };
 
@@ -82,6 +74,11 @@ export interface WeaponState {
   reloading: number;
   charge: number;
   charging: boolean;
+  ads: number;
+  bloom: number;
+  ready: number;
+  swap: number;
+  pending: WeaponId | null;
 }
 
 export function makeWeapon(id: WeaponId): WeaponState {
@@ -94,9 +91,18 @@ export function makeWeapon(id: WeaponId): WeaponState {
     reloading: 0,
     charge: 0,
     charging: false,
+    ads: 0,
+    bloom: 0,
+    ready: 0,
+    swap: 0,
+    pending: null,
   };
 }
 
 export function fireInterval(id: WeaponId): number {
   return 60 / WEAPONS[id].rpm;
+}
+
+export function canShoot(w: WeaponState): boolean {
+  return w.reloading <= 0 && w.cooldown <= 0 && w.swap <= 0 && w.ready <= 0 && w.mag > 0;
 }
