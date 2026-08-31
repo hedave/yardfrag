@@ -211,6 +211,7 @@ export class Game {
 
   private startMatch(map: MapId, diff: Difficulty): void {
     void this.sfx.resume();
+    this.armLock();
     this.mapId = map;
     this.difficulty = diff;
     this.loadArena(map);
@@ -244,7 +245,6 @@ export class Game {
       };
       this.place(bot);
     }
-    this.armLock();
     this.ui.banner("TEND THE YARD");
   }
 
@@ -261,9 +261,10 @@ export class Game {
 
   private resume(): void {
     this.phase = "playing";
-    this.ui.hideMenu();
-    this.ui.setScoreboard(this.boardOn, this.rows(), this.arena?.title ?? "");
+    this.boardOn = false;
     this.armLock();
+    this.ui.hideMenu();
+    this.ui.setScoreboard(false, this.rows(), this.arena?.title ?? "");
   }
 
   private pause(): void {
@@ -424,7 +425,7 @@ export class Game {
     if (this.phase === "paused" || this.phase === "results") {
       if (this.phase === "paused" && this.input.pause) this.resume();
       if (this.phase === "paused") {
-        this.ui.setScoreboard(true, this.rows(), this.arena?.title ?? "");
+        this.ui.setScoreboard(false, this.rows(), this.arena?.title ?? "");
       }
       this.syncViewmodels(false);
       this.input.endFrame();
