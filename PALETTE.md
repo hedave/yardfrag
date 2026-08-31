@@ -1,40 +1,47 @@
 # Yardfrag palette
 
-Readability first. Hostile lime is reserved and never used as a large map fill. The two yards do not share one muddy brown.
+Readability first. Hostile lime is reserved and never used as a large map fill. The two yards do not share one muddy brown. Lighting and fog are authored so those reserved colors hold instead of flattening into the haze.
 
 ## Reserved (actors / HUD)
 
 | Role | Hex | Why |
 | --- | --- | --- |
-| Hostile signal | `#F5FF3D` | Unlit bot outline, sash, nameplate, crosshair. High value, hue sits off both warm plaster and cool tin. |
+| Hostile signal | `#F5FF3D` | Unlit bot outline, sash, nameplate, crosshair. High value, hue sits off both warm plaster and cool tin. Fog is off on these materials so the silhouette still pops at range. |
 | Player clay | `#FF8A3D` | Viewmodel + minimap self. Warm, not the bot lime. |
 | Pot ink | `#1A1A1E` | Dark pot helmet so the head silhouette holds on cream *and* pale roofs. |
 | Hit flash | `#FFFFFF` | One-frame bleach on sash/outline when a bot takes a pellet. |
-| Bot bodies | `#E11D74` `#FF6A00` `#4D3BFF` `#FF2BD6` `#00D4AA` | Unique chroma per yardling; outline still reads if a body hue kisses a prop. |
+| Bot bodies | `#E11D74` `#FF6A00` `#4D3BFF` `#FF2BD6` `#00D4AA` | Unique chroma per yardling; outline still reads if a body hue kisses a prop. Bodies take map light; the lime sash does the long-range read. |
 
 ## Potting Hall — warm greenhouse afternoon
 
+Late sun through glass. Peach zenith, amber horizon, lamps as warm practicals. Cool sky fill keeps plaster from going one flat cream.
+
 | Slot | Hex | Use |
 | --- | --- | --- |
-| Sky / fog | `#F2C48A` / `#E8B878` | Peach haze. Bright value vs dark pot heads. |
-| Floor | `#D2B07A` | Sand tile, lighter than walls were. |
-| Plaster walls | `#F3E4C4` | High-value planes. |
+| Sky / fog | `#FFE2B0` zenith · `#F2C48A` · `#E8A868` horizon / `#E0B070` fog | Peach haze. Fog starts farther than a tutorial cube so mid-yard still has chroma. |
+| Floor | `#D2B07A` | Sand tile with grout; lighter than wainscot. |
+| Plaster walls | `#F3E4C4` | High-value planes, vertex AO at the skirting. |
 | Wainscot / beds | `#1F6B48` / `#2F9E4A` | Dark/mid green so floor ≠ wall ≠ prop. |
-| Teak mezzanine | `#8A4E24` | Only large wood. |
+| Teak mezzanine | `#8A4E24` | Only large wood. Grain + underside AO. |
 | Clay pots | `#E24A1C` | Props, not bots. |
-| Key / fill | `#FFD080` warm key, `#9EB8D8` cool fill | Split temperature. |
+| Key / fill / rim | `#FFD080` sun, `#9EB8D8` cool fill, `#FFE8C4` warm rim | Split temperature. Exposure ~1.16. |
 
 ## Cistern Roofs — cool moonlit tin
 
+Moon key, indigo-teal dusk, amber lamps only as points. Tin is the bright plane; shed walls stay dark so lime reads against both.
+
 | Slot | Hex | Use |
 | --- | --- | --- |
-| Sky / fog | `#17304C` / `#1E3A52` | Indigo-teal dusk. Obvious in two seconds vs peach hall. |
+| Sky / fog | `#0C1C34` zenith · `#17304C` · `#2A4A68` horizon / `#152838` fog | Indigo dusk. Obvious in two seconds vs peach hall. |
 | Courtyard | `#4A5568` | Slate. Not dirt. |
-| Shed walls | `#243044` | Dark blue-slate. |
-| Tin roofs | `#8FD4DE` | Pale cyan, high value against the sky. |
+| Shed walls | `#243044` | Dark blue-slate, clapboard, AO in the eaves. |
+| Tin roofs | `#8FD4DE` | Pale cyan, corrugated; moon spec catches the key. |
 | Brass walks | `#D4A429` | Warm accent on a cool map. |
-| Key / fill | `#C8D8FF` moon key, amber lamps only as warm points |  |
+| Key / fill / rim | `#C8D8FF` moon key, `#6A88B8` fill, `#A8C4E8` rim | Amber lamps only as warm points. Exposure ~0.94 so night stays night. |
 
-## HUD
+## Lighting rules
 
-Crosshair and hit marker use `#F5FF3D` with a `#111111` stroke so they hold on peach sky and indigo sky. Health fill `#3DFF6A`. Hurt vignette `#FF2A1A`.
+- Maps stay different times of day. Do not flatten both to a grey three-point rig.
+- Signal lime and player clay are never large fills. World materials use roughness/metalness/AO so those two colors stay the loudest marks.
+- Yardling outline / sash / chevron / nameplate do not take fog. They are MeshBasic, not a PBR shader ball.
+- Geometry is original (code-built). No third-party game maps or commercial kits.
