@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Yardfrag</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231c1612' width='32' height='32'/%3E%3Cellipse cx='16' cy='20' rx='9' ry='7' fill='%23c45c32'/%3E%3Crect x='10' y='8' width='12' height='10' rx='2' fill='%23c45c32'/%3E%3Crect x='12' y='6' width='8' height='3' fill='%236b4433'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="view"></canvas>
+
+      <div id="hurt"></div>
+      <div id="flash"></div>
+
+      <div id="hud" class="hidden">
+        <div id="compass">
+          <div id="compass-track"></div>
+        </div>
+        <canvas id="minimap" width="164" height="164"></canvas>
+        <div id="crosshair">
+          <span class="ch ch-n"></span>
+          <span class="ch ch-e"></span>
+          <span class="ch ch-s"></span>
+          <span class="ch ch-w"></span>
+          <span class="ch-dot"></span>
+        </div>
+        <div id="hitmarker"></div>
+        <div id="killfeed"></div>
+        <div id="match-meta">
+          <div id="timer">6:00</div>
+          <div id="fragline">0 / 20</div>
+        </div>
+        <div id="vitals">
+          <div class="vital">
+            <span class="vital-label">VITAL</span>
+            <div class="bar">
+              <div id="hp-fill"></div>
+            </div>
+            <span id="hp-num">100</span>
+          </div>
+          <div class="vital ammo-vital">
+            <span class="vital-label" id="weap-name">CLIPPER</span>
+            <div class="ammo-row">
+              <span id="ammo-mag">24</span>
+              <span class="ammo-slash">/</span>
+              <span id="ammo-res">72</span>
+            </div>
+            <div id="charge-wrap" class="hidden">
+              <div id="charge-fill"></div>
+            </div>
+          </div>
+        </div>
+        <div id="center-msg"></div>
+        <div id="death-banner" class="hidden">
+          <div class="death-kicker">LAID OUT</div>
+          <div id="death-by">by Thistle</div>
+          <div class="death-sub">yard cam — respawn shortly</div>
+        </div>
+        <div id="scoreboard" class="hidden">
+          <div class="board-head">
+            <span>YARD BOARD</span>
+            <span id="board-map">Potting Hall</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Frags</th>
+                <th>Falls</th>
+              </tr>
+            </thead>
+            <tbody id="board-body"></tbody>
+          </table>
+        </div>
+        <div id="hint" class="hidden">click to tend the yard</div>
+      </div>
+
+      <div id="touch" class="hidden">
+        <div id="lookzone"></div>
+        <div id="joy">
+          <div id="joy-stick"></div>
+        </div>
+        <button type="button" id="btn-fire">FRAG</button>
+        <button type="button" id="btn-jump">UP</button>
+        <button type="button" id="btn-sprint">RUN</button>
+        <button type="button" id="btn-reload">RELOAD</button>
+        <div id="btn-weps">
+          <button type="button" data-weap="0">1</button>
+          <button type="button" data-weap="1">2</button>
+          <button type="button" data-weap="2">3</button>
+        </div>
+        <button type="button" id="btn-pause">II</button>
+        <button type="button" id="btn-board">BOARD</button>
+      </div>
+
+      <div id="menu">
+        <div id="menu-card">
+          <div class="brand">
+            <div class="brand-kicker">backyard arena</div>
+            <h1>YARDFRAG</h1>
+            <p class="tag">
+              dusk, dirt, and bad aim. original geometry. local bots.
+            </p>
+          </div>
+
+          <section id="panel-home" class="panel">
+            <button type="button" class="btn primary" id="btn-play">Play</button>
+            <button type="button" class="btn" id="btn-settings">Settings</button>
+            <button type="button" class="btn" id="btn-credits">Credits</button>
+            <p id="career" class="career"></p>
+          </section>
+
+          <section id="panel-setup" class="panel hidden">
+            <h2>Match</h2>
+            <label class="field">
+              Yard
+              <select id="sel-map">
+                <option value="potting">Potting Hall — indoor yard</option>
+                <option value="cistern">Cistern Roofs — tin rooftops</option>
+              </select>
+            </label>
+            <label class="field">
+              Bots
+              <select id="sel-diff">
+                <option value="laidback">Laid-back</option>
+                <option value="mean">Mean</option>
+              </select>
+            </label>
+            <p class="fine">
+              First to 20 frags or 6 minutes. Five yardlings, free-for-all.
+            </p>
+            <div class="row">
+              <button type="button" class="btn primary" id="btn-start">
+                Drop in
+              </button>
+              <button type="button" class="btn" id="btn-setup-back">Back</button>
+            </div>
+          </section>
+
+          <section id="panel-settings" class="panel hidden">
+            <h2>Settings</h2>
+            <label class="field">
+              Look feel <span id="sens-val">1.00</span>
+              <input id="rng-sens" type="range" min="0.25" max="2.4" step="0.05" />
+            </label>
+            <label class="field">
+              Volume <span id="vol-val">70%</span>
+              <input id="rng-vol" type="range" min="0" max="1" step="0.01" />
+            </label>
+            <label class="check">
+              <input id="chk-invert" type="checkbox" />
+              Invert look Y
+            </label>
+            <div class="row">
+              <button type="button" class="btn" id="btn-settings-back">
+                Back
+              </button>
+            </div>
+          </section>
+
+          <section id="panel-credits" class="panel hidden">
+            <h2>Credits</h2>
+            <p>
+              Yardfrag is original work: maps, yardling silhouettes, tool-guns,
+              HUD, and WebAudio stings were authored for this project.
+            </p>
+            <p>
+              Inspired by the <em>pace</em> of browser arena shooters — not a
+              clone of Krunker or any commercial title. No third-party game
+              maps, models, or samples.
+            </p>
+            <p>
+              Stack: Vite, TypeScript, Three.js. Audio is synthesized in the
+              browser. Multiplayer netcode is stubbed; local bots ship first.
+            </p>
+            <button type="button" class="btn" id="btn-credits-back">Back</button>
+          </section>
+
+          <section id="panel-pause" class="panel hidden">
+            <h2>Paused</h2>
+            <div class="row">
+              <button type="button" class="btn primary" id="btn-resume">
+                Resume
+              </button>
+              <button type="button" class="btn" id="btn-pause-settings">
+                Settings
+              </button>
+              <button type="button" class="btn" id="btn-quit">Quit yard</button>
+            </div>
+          </section>
+
+          <section id="panel-results" class="panel hidden">
+            <h2 id="results-title">Yard closed</h2>
+            <div id="results-board"></div>
+            <div class="row">
+              <button type="button" class="btn primary" id="btn-again">
+                Another round
+              </button>
+              <button type="button" class="btn" id="btn-results-home">
+                Menu
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
