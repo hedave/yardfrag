@@ -22,7 +22,12 @@
       <div id="vignette"></div>
 
       <div id="hud" class="hidden">
+        <div id="letterbox" aria-hidden="true">
+          <div class="lb lb-top"></div>
+          <div class="lb lb-bot"></div>
+        </div>
         <div id="compass">
+          <div id="compass-notch"></div>
           <div id="compass-track"></div>
         </div>
         <canvas id="minimap" width="164" height="164"></canvas>
@@ -33,7 +38,13 @@
           <span class="ch ch-w"></span>
           <span class="ch-dot"></span>
         </div>
-        <div id="hitmarker"></div>
+        <div id="sight-iron" aria-hidden="true"></div>
+        <div id="hitmarker">
+          <span class="hm hm-nw"></span>
+          <span class="hm hm-ne"></span>
+          <span class="hm hm-se"></span>
+          <span class="hm hm-sw"></span>
+        </div>
         <div id="headpip"></div>
         <div id="killfeed"></div>
         <div id="match-meta">
@@ -41,15 +52,16 @@
           <div id="fragline">0 / 20</div>
         </div>
         <div id="vitals">
-          <div class="vital">
+          <div class="vital" id="vital-hp">
             <span class="vital-label">VITAL</span>
             <div class="bar">
               <div id="hp-fill"></div>
             </div>
             <span id="hp-num">100</span>
           </div>
-          <div class="vital ammo-vital">
+          <div class="vital ammo-vital" id="vital-ammo">
             <span class="vital-label" id="weap-name">CLIPPER</span>
+            <span id="sight-chip">SIGHT</span>
             <div class="ammo-row">
               <span id="ammo-mag">24</span>
               <span class="ammo-slash">/</span>
@@ -64,7 +76,7 @@
         <div id="death-banner" class="hidden">
           <div class="death-kicker">LAID OUT</div>
           <div id="death-by">by Thistle</div>
-          <div class="death-sub">yard cam — respawn shortly</div>
+          <div class="death-sub">yard cam — dirt settles, then you drop back in</div>
         </div>
         <div id="scoreboard" class="hidden">
           <div class="board-head">
@@ -74,6 +86,7 @@
           <table>
             <thead>
               <tr>
+                <th class="rank">#</th>
                 <th>Name</th>
                 <th>Frags</th>
                 <th>Falls</th>
@@ -82,7 +95,7 @@
             <tbody id="board-body"></tbody>
           </table>
         </div>
-        <div id="hint" class="hidden">click the yard to look · RMB hold to sight · Tab or B for the board</div>
+        <div id="hint" class="hidden">click the yard to look · RMB or F to sight · Tab for the board</div>
       </div>
 
       <div id="touch" class="hidden">
@@ -107,18 +120,34 @@
       <div id="menu">
         <div id="menu-card">
           <div class="brand">
-            <div class="brand-kicker">backyard arena</div>
-            <h1>YARDFRAG</h1>
-            <p class="tag">
-              dusk, dirt, and two aims. original geometry. local bots.
-            </p>
+            <svg class="brand-pot" viewBox="0 0 40 40" aria-hidden="true">
+              <ellipse cx="20" cy="26" rx="11" ry="8" fill="#c45c28" />
+              <rect x="12" y="12" width="16" height="12" rx="2" fill="#ff8a3d" />
+              <rect x="15" y="9" width="10" height="4" fill="#6b4433" />
+              <rect x="18" y="6" width="4" height="5" fill="#3dff6a" />
+            </svg>
+            <div class="brand-copy">
+              <div class="brand-kicker">backyard arena</div>
+              <h1>YARDFRAG</h1>
+            </div>
           </div>
+          <p class="tag">
+            dusk dirt, terracotta, two aims. original yards. local bots.
+          </p>
 
           <section id="panel-home" class="panel">
-            <button type="button" class="btn primary" id="btn-play">Play</button>
-            <button type="button" class="btn" id="btn-settings">Settings</button>
-            <button type="button" class="btn" id="btn-credits">Credits</button>
-            <p id="career" class="career"></p>
+            <div class="menu-actions">
+              <button type="button" class="btn primary btn-block" id="btn-play">
+                Play
+              </button>
+              <button type="button" class="btn btn-block" id="btn-settings">
+                Settings
+              </button>
+              <button type="button" class="btn btn-ghost" id="btn-credits">
+                Credits
+              </button>
+            </div>
+            <div id="career" class="career"></div>
           </section>
 
           <section id="panel-setup" class="panel hidden">
@@ -201,6 +230,23 @@
 
           <section id="panel-pause" class="panel hidden">
             <h2>Paused</h2>
+            <div class="pause-board">
+              <div class="board-head">
+                <span>YARD BOARD</span>
+                <span id="pause-board-map"></span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th class="rank">#</th>
+                    <th>Name</th>
+                    <th>Frags</th>
+                    <th>Falls</th>
+                  </tr>
+                </thead>
+                <tbody id="pause-board-body"></tbody>
+              </table>
+            </div>
             <div class="row">
               <button type="button" class="btn primary" id="btn-resume">
                 Resume
