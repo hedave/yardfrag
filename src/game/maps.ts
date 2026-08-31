@@ -9,8 +9,8 @@ export function buildMap(id: MapId): Arena {
 
 function buildPotting(): Arena {
   const y = new Yard("potting", "Potting Hall");
-  y.fogNear = 12;
-  y.fogFar = 40;
+  y.fogNear = 16;
+  y.fogFar = 46;
   y.bounds = { minX: -27, maxX: 27, minZ: -19, maxZ: 19 };
   y.killY = -4;
 

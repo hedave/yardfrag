@@ -412,12 +412,14 @@ export class Game {
       this.orbit += dt;
       this.camera.fov = 62;
       this.camera.updateProjectionMatrix();
+      const hall = this.mapId === "potting";
+      const t = this.orbit * 0.18;
       this.camera.position.set(
-        Math.sin(this.orbit * 0.18) * 26,
-        11,
-        Math.cos(this.orbit * 0.18) * 26,
+        Math.sin(t) * (hall ? 14 : 24),
+        hall ? 6.4 : 16,
+        Math.cos(t) * (hall ? 10 : 22),
       );
-      this.camera.lookAt(0, 2.4, 0);
+      this.camera.lookAt(0, hall ? 2.2 : 4.2, 0);
       this.camera.rotation.z = 0;
       this.input.endFrame();
       return;
