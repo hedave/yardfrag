@@ -9,8 +9,8 @@ export function buildMap(id: MapId): Arena {
 
 function buildPotting(): Arena {
   const y = new Yard("potting", "Potting Hall");
-  y.fogNear = 20;
-  y.fogFar = 54;
+  y.fogNear = 12;
+  y.fogFar = 40;
   y.bounds = { minX: -27, maxX: 27, minZ: -19, maxZ: 19 };
   y.killY = -4;
 
@@ -34,6 +34,7 @@ function buildPotting(): Arena {
   y.box(0, 0.06, D / 2 - 0.9, W - 3, 0.12, 1.1, y.m.night, { collide: false, cast: false, ao: 0.1 });
 
   y.box(0, H + 0.2, 0, W, 0.4, D, y.m.tin, { receive: true, tile: 4 });
+  y.box(0, H - 0.12, 0, W - 1.4, 0.1, D - 1.4, y.m.cedar, { collide: false, cast: false, receive: true, tile: 3.4, ao: 0.12 });
   for (const x of [-16, -8, 0, 8, 16]) {
     y.box(x, H - 0.15, 0, 0.28, 0.5, D - 2, y.m.night, { collide: false, tile: 2 });
   }
@@ -100,6 +101,10 @@ function buildPotting(): Arena {
     y.pot(px, pz, 0, 0.9 + ((px + pz) % 5) * 0.08);
   }
 
+  y.box(-22, 2.4, -4, 1.6, 0.12, 3.2, y.m.night, { collide: false });
+  y.pot(-22.2, -3.2, 2.46, 0.55);
+  y.pot(-21.6, -5.1, 2.46, 0.48);
+  y.box(22, 2.2, 8, 1.4, 0.12, 2.8, y.m.concrete, { collide: false });
   y.box(-20, 2.8, -16.6, 8, 0.08, 0.08, y.m.cloth, { collide: false, cast: false });
   y.box(-16, 1.6, -16.6, 0.12, 3.2, 0.12, y.m.cedar, { collide: false });
   y.box(6, 6.6, 4, 0.04, 1.6, 0.04, y.m.brass, { collide: false, cast: false });
@@ -110,10 +115,10 @@ function buildPotting(): Arena {
   y.lamp(18, 7.6, -8, 7.4, POTTING.lamp);
   y.lamp(-18, 7.2, 10, 8.2, POTTING.lamp);
 
-  y.hemi(POTTING.fillSky, POTTING.fillGround, 0.58);
-  y.keyLight(POTTING.key, 1.85, 12, 22, 9, 30);
-  y.fillLight(POTTING.fillSky, 0.4, -16, 9, -10);
-  y.fillLight(POTTING.rim, 0.28, 2, 7, -18);
+  y.hemi(POTTING.fillSky, POTTING.fillGround, 0.82);
+  y.keyLight(POTTING.key, 1.35, 12, 22, 9, 30);
+  y.fillLight(POTTING.fillSky, 0.48, -16, 9, -10);
+  y.fillLight(POTTING.rim, 0.34, 2, 7, -18);
 
   y.spawn(-20, 0, -10, 0.4);
   y.spawn(20, 4.55, -10, Math.PI);
@@ -173,8 +178,8 @@ function highWindows(
 
 function buildCistern(): Arena {
   const y = new Yard("cistern", "Cistern Roofs");
-  y.fogNear = 16;
-  y.fogFar = 62;
+  y.fogNear = 10;
+  y.fogFar = 48;
   y.bounds = { minX: -32, maxX: 32, minZ: -26, maxZ: 26 };
   y.killY = -5;
 
@@ -237,10 +242,10 @@ function buildCistern(): Arena {
   y.lamp(16, 8.4, -6, 6.4, CISTERN.lamp);
   y.lamp(-2, 2.6, 0, 5.2, CISTERN.lamp);
 
-  y.hemi(CISTERN.fillSky, CISTERN.fillGround, 0.7);
-  y.keyLight(CISTERN.key, 0.92, -14, 24, -12, 36);
-  y.fillLight(CISTERN.rim, 0.48, 16, 12, 12);
-  y.fillLight(CISTERN.lamp, 0.16, 0, 8, 4);
+  y.hemi(CISTERN.fillSky, CISTERN.fillGround, 0.88);
+  y.keyLight(CISTERN.key, 0.78, -14, 24, -12, 36);
+  y.fillLight(CISTERN.rim, 0.55, 16, 12, 12);
+  y.fillLight(CISTERN.lamp, 0.22, 0, 8, 4);
 
   y.spawn(-16, 5.46, -8, 0.5);
   y.spawn(2, 6.56, 10, Math.PI);
