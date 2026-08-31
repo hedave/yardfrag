@@ -436,7 +436,7 @@ body {
   );
 }
 
-#menu.playing {
+#menu.playing:not(.paused):not(.results) {
   display: none;
 }
 

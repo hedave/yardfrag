@@ -116,6 +116,7 @@ export class UI {
 
   hideMenu(): void {
     this.menu.classList.add("playing");
+    this.menu.classList.remove("paused", "results");
   }
 
   showHud(on: boolean): void {

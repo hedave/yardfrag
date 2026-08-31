@@ -47,6 +47,7 @@ interface Fighter {
   player: boolean;
   alive: boolean;
   hp: number;
+  guard: number;
   x: number;
   y: number;
   z: number;
@@ -102,6 +103,7 @@ export class Game {
   private recoil = 0;
   private chargedSfx = false;
   private nextId = 1;
+  private boardOn = false;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -185,6 +187,7 @@ export class Game {
     this.timeLeft = MATCH_SECONDS;
     this.sessionSeconds = 0;
     this.phase = "playing";
+    this.boardOn = false;
     this.ui.hideMenu();
     this.ui.showHud(true);
     this.ui.showTouch(this.input.isTouch());
@@ -224,6 +227,7 @@ export class Game {
   private resume(): void {
     this.phase = "playing";
     this.ui.hideMenu();
+    this.ui.setScoreboard(this.boardOn, this.rows(), this.arena?.title ?? "");
     this.input.requestLock();
   }
 
@@ -255,6 +259,7 @@ export class Game {
       player,
       alive: true,
       hp: 100,
+      guard: 0,
       x: 0,
       y: 0,
       z: 0,
@@ -313,6 +318,7 @@ export class Game {
     f.hp = 100;
     f.alive = true;
     f.respawn = 0;
+    f.guard = 1.7;
     if (f.mesh) {
       f.mesh.visible = true;
       f.mesh.rotation.z = 0;
@@ -353,12 +359,16 @@ export class Game {
 
     if (this.phase === "paused" || this.phase === "results") {
       if (this.phase === "paused" && this.input.pause) this.resume();
+      if (this.phase === "paused") {
+        this.ui.setScoreboard(true, this.rows(), this.arena?.title ?? "");
+      }
       this.syncViewmodels(false);
       this.input.endFrame();
       return;
     }
 
-    if (this.input.pause) this.pause();
+    if (this.input.pause || this.input.lockLost) this.pause();
+    if (this.input.tabToggle) this.boardOn = !this.boardOn;
 
     if (this.phase === "playing") {
       this.timeLeft -= dt;
@@ -375,6 +385,7 @@ export class Game {
     else if (this.phase === "deathcam") this.updateDeathcam(dt);
 
     for (const f of this.fighters) {
+      if (f.guard > 0) f.guard -= dt;
       this.tickWeapon(f, dt);
       if (!f.alive) {
         f.respawn -= dt;
@@ -399,7 +410,7 @@ export class Game {
     this.ui.compassYaw(you.yaw);
     this.ui.vitals(you.hp, you.weap, you.weap.charge);
     this.ui.meta(this.timeLeft, you.kills, FRAG_LIMIT);
-    this.ui.setScoreboard(this.input.tab, this.rows(), this.arena!.title);
+    this.ui.setScoreboard(this.input.tab || this.boardOn, this.rows(), this.arena!.title);
     this.ui.showHint(this.phase === "playing" && !this.input.locked && !this.input.isTouch());
     this.input.endFrame();
   }
@@ -752,7 +763,7 @@ export class Game {
   }
 
   private hurt(target: Fighter, dmg: number, src: Fighter): void {
-    if (!target.alive) return;
+    if (!target.alive || target.guard > 0) return;
     target.hp -= dmg;
     target.lastAttacker = src.id;
     if (target.player) {

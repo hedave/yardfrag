@@ -13,7 +13,9 @@ export class Input {
   lookDx = 0;
   lookDy = 0;
   tab = false;
+  tabToggle = false;
   pause = false;
+  lockLost = false;
   invertY = false;
   sensitivity = 1;
 
@@ -43,6 +45,7 @@ export class Input {
       if (down && e.code === "Digit2") this.weap = 1;
       if (down && e.code === "Digit3") this.weap = 2;
       if (down && e.code === "KeyR") this.reload = true;
+      if (down && (e.code === "Tab" || e.code === "KeyB")) this.tabToggle = true;
     };
     const kd = (e: KeyboardEvent) => onKey(e, true);
     const ku = (e: KeyboardEvent) => onKey(e, false);
@@ -82,7 +85,9 @@ export class Input {
     this.unbind.push(() => document.removeEventListener("wheel", wheel));
 
     const plc = () => {
-      this.locked = document.pointerLockElement === this.canvas;
+      const next = document.pointerLockElement === this.canvas;
+      if (this.locked && !next) this.lockLost = true;
+      this.locked = next;
     };
     document.addEventListener("pointerlockchange", plc);
     this.unbind.push(() => document.removeEventListener("pointerlockchange", plc));
@@ -92,7 +97,12 @@ export class Input {
 
   requestLock(): void {
     if (this.isTouch()) return;
-    this.canvas.requestPointerLock();
+    const req = this.canvas.requestPointerLock();
+    if (req && typeof req.catch === "function") {
+      void req.catch(() => {
+        /* browser may require a click on the canvas itself */
+      });
+    }
   }
 
   exitLock(): void {
@@ -116,7 +126,7 @@ export class Input {
     this.jumpPressed = jumping && !this.jump;
     this.jump = jumping;
     this.sprint = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
-    this.tab = this.keys.has("Tab");
+    this.tab = this.keys.has("Tab") || this.keys.has("KeyB");
     if (this.fireTouch) this.firing = true;
   }
 
@@ -129,6 +139,8 @@ export class Input {
     this.weap = null;
     this.cycle = 0;
     this.pause = false;
+    this.lockLost = false;
+    this.tabToggle = false;
     this.jumpPressed = false;
   }
 
