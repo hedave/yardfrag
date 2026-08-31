@@ -23,6 +23,8 @@ export class Input {
   sensitivity = 1;
 
   private keys = new Set<string>();
+  private adsMouse = false;
+  private adsKey = false;
   private lookTouch: number | null = null;
   private lookLastX = 0;
   private lookLastY = 0;
@@ -49,6 +51,11 @@ export class Input {
       if (down && e.code === "Digit3") this.weap = 2;
       if (down && e.code === "KeyR") this.reload = true;
       if (down && (e.code === "Tab" || e.code === "KeyB")) this.tabToggle = true;
+      if (e.code === "KeyF") {
+        this.adsKey = down;
+        if (down) this.adsPressed = true;
+        else this.adsReleased = true;
+      }
     };
     const kd = (e: KeyboardEvent) => onKey(e, true);
     const ku = (e: KeyboardEvent) => onKey(e, false);
@@ -70,7 +77,7 @@ export class Input {
       }
       if (e.button === 2) {
         e.preventDefault();
-        this.adsHeld = true;
+        this.adsMouse = true;
         this.adsPressed = true;
       }
     };
@@ -80,7 +87,7 @@ export class Input {
         this.fireReleased = true;
       }
       if (e.button === 2) {
-        this.adsHeld = false;
+        this.adsMouse = false;
         this.adsReleased = true;
       }
     };
@@ -145,6 +152,7 @@ export class Input {
     this.jump = jumping;
     this.sprint = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
     this.tab = this.keys.has("Tab") || this.keys.has("KeyB");
+    this.adsHeld = this.adsMouse || this.adsKey;
     if (this.fireTouch) this.firing = true;
   }
 
@@ -249,13 +257,13 @@ export class Input {
       hold(
         ads,
         () => {
-          this.adsHeld = true;
-          this.adsPressed = true;
-        },
-        () => {
-          this.adsHeld = false;
-          this.adsReleased = true;
-        },
+        this.adsMouse = true;
+        this.adsPressed = true;
+      },
+      () => {
+        this.adsMouse = false;
+        this.adsReleased = true;
+      },
       );
     }
     hold(jump, () => {

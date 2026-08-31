@@ -27,7 +27,7 @@ npm run preview
 
 ## Play
 
-- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse hold · **Jump** Space · **Sprint** Shift
+- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse or F hold · **Jump** Space · **Sprint** Shift
 - **Reload** R · **Weapons** 1 / 2 / 3 or scroll
 - **Scoreboard** Tab · **Pause** Esc
 - First to 20 frags or 6 minutes. Five yardling bots, free-for-all.
