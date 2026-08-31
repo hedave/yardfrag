@@ -1018,6 +1018,10 @@ export class Game {
     this.orbit += dt;
     const ox = killer.x + Math.cos(this.orbit) * 4.2;
     const oz = killer.z + Math.sin(this.orbit) * 4.2;
+    if (Math.abs(this.camera.fov - this.hipFov) > 0.2) {
+      this.camera.fov = this.hipFov;
+      this.camera.updateProjectionMatrix();
+    }
     this.camera.position.set(ox, killer.y + 2.4, oz);
     this.camera.lookAt(killer.x, killer.y + 1.3, killer.z);
     this.syncViewmodels(false);
