@@ -219,7 +219,7 @@ function buildCistern(): Arena {
   y.spawn(16, 7.36, -6, -2);
   y.spawn(-18, 5.96, 10, 0.8);
   y.spawn(-6, 4.76, -16, 0.2);
-  y.spawn(8, 0, 2, 1.1);
+  y.spawn(8, 0, -8, 1.1);
   y.spawn(-24, 0, -16, 0.4);
 
   const ways: [number, number, number][] = [
@@ -230,7 +230,7 @@ function buildCistern(): Arena {
     [-6, 4.76, -16],
     [-7, 5.58, 1.6],
     [9.2, 6.98, 2.2],
-    [8, 0, 2],
+    [8, 0, -8],
     [-22, 0, 0],
     [20, 0, 10],
     [0, 0, -10],

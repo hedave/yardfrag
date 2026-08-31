@@ -24,7 +24,10 @@ export class Sfx {
 
   setVolume(v: number): void {
     this.volume = Math.max(0, Math.min(1, v));
-    if (this.master) this.master.gain.value = this.volume;
+    if (this.master && this.ctx) {
+      this.master.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.master.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+    }
   }
 
   async resume(): Promise<void> {

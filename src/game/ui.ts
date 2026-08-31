@@ -165,9 +165,11 @@ export class UI {
   }
 
   hideMenu(): void {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     this.menu.classList.add("playing");
     this.menu.classList.remove("paused", "results");
     this.hud.classList.remove("menu-over");
+    this.scoreboard.classList.add("hidden");
   }
 
   showHud(on: boolean): void {
