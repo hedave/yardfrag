@@ -127,6 +127,8 @@ export class Game {
   private hipFov = DEFAULT_HIP_FOV;
   private lastStrafe = 0;
   private adsAudio = false;
+  private readonly pmrem: THREE.PMREMGenerator;
+  private envRT: THREE.WebGLRenderTarget | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -140,6 +142,8 @@ export class Game {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.12;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.pmrem.compileEquirectangularShader();
     this.camera.rotation.order = "YXZ";
     this.fx = new Fx(this.scene);
     this.input = new Input(canvas, ui.touch);
@@ -201,6 +205,21 @@ export class Game {
     this.scene.background = new THREE.Color(this.arena.sky);
     this.scene.fog = new THREE.Fog(this.arena.fogColor, this.arena.fogNear, this.arena.fogFar);
     this.renderer.toneMappingExposure = this.arena.exposure;
+    this.bindEnvironment(this.arena);
+  }
+
+  private bindEnvironment(arena: Arena): void {
+    if (this.envRT) {
+      this.envRT.dispose();
+      this.envRT = null;
+    }
+    const tex = new THREE.CanvasTexture(arena.envCanvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    this.envRT = this.pmrem.fromEquirectangular(tex);
+    tex.dispose();
+    this.scene.environment = this.envRT.texture;
+    this.scene.environmentIntensity = arena.envIntensity;
   }
 
   private startMatch(map: MapId, diff: Difficulty): void {
@@ -393,12 +412,14 @@ export class Game {
       this.orbit += dt;
       this.camera.fov = 62;
       this.camera.updateProjectionMatrix();
+      const hall = this.mapId === "potting";
+      const t = this.orbit * 0.18;
       this.camera.position.set(
-        Math.sin(this.orbit * 0.18) * 26,
-        11,
-        Math.cos(this.orbit * 0.18) * 26,
+        Math.sin(t) * (hall ? 14 : 24),
+        hall ? 6.4 : 16,
+        Math.cos(t) * (hall ? 10 : 22),
       );
-      this.camera.lookAt(0, 2.4, 0);
+      this.camera.lookAt(0, hall ? 2.2 : 4.2, 0);
       this.camera.rotation.z = 0;
       this.input.endFrame();
       return;

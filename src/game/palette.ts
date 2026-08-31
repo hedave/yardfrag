@@ -15,10 +15,12 @@ export const BOT_BODIES = [0xe11d74, 0xff6a00, 0x4d3bff, 0xff2bd6, 0x00d4aa] as 
 
 export const POTTING = {
   sky: 0xf2c48a,
-  fog: 0xe8b878,
+  skyZenith: 0xffe2b0,
+  skyHorizon: 0xe8a868,
+  fog: 0xe0b070,
   floor: 0xd2b07a,
   plaster: 0xf3e4c4,
-  wainscot: 0x1f6b48,
+  wainscot: 0x2a8a52,
   teak: 0x8a4e24,
   leaf: 0x2f9e4a,
   clay: 0xe24a1c,
@@ -30,13 +32,17 @@ export const POTTING = {
   fillSky: 0x9eb8d8,
   fillGround: 0x8a5a32,
   lamp: 0xffc070,
+  rim: 0xffe8c4,
+  surround: 0x6e4224,
 } as const;
 
 export const CISTERN = {
   sky: 0x17304c,
-  fog: 0x1e3a52,
+  skyZenith: 0x0c1c34,
+  skyHorizon: 0x2a4a68,
+  fog: 0x152838,
   floor: 0x4a5568,
-  wall: 0x243044,
+  wall: 0x3a4e64,
   tin: 0x8fd4de,
   brass: 0xd4a429,
   concrete: 0xa8b2be,
@@ -47,9 +53,11 @@ export const CISTERN = {
   cloth: 0x7ec8d4,
   key: 0xc8d8ff,
   fillSky: 0x6a88b8,
-  fillGround: 0x2a3038,
+  fillGround: 0x243038,
   lamp: 0xffb36a,
   moon: 0xe8eefc,
+  rim: 0xa8c4e8,
+  surround: 0x121820,
 } as const;
 
 export const HUD = {
@@ -70,5 +78,9 @@ export function mapFog(id: MapId): number {
 }
 
 export function mapExposure(id: MapId): number {
-  return id === "potting" ? 1.18 : 1.02;
+  return id === "potting" ? 1.2 : 1.08;
+}
+
+export function mapEnvIntensity(id: MapId): number {
+  return id === "potting" ? 0.7 : 0.42;
 }
