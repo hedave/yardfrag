@@ -31,18 +31,20 @@ import type { Arena } from "./world";
 import { BOT_BODIES, PLAYER, PLAYER_HEX, SIGNAL_HEX } from "./palette";
 import { createViewmodel, createYardling, flashYardling, poseYardling } from "./yardling";
 import {
+  adsWeight,
   applyShotRecoil,
   cone,
   crosshairGap,
   damp,
   DEFAULT_HIP_FOV,
   FEEL,
+  freshRecoil,
+  LAND_FADE,
   lerp,
   lookScale,
   poseLerp,
   recoverRecoil,
   stepAds,
-  type RecoilState,
 } from "./gunfeel";
 
 const EYE = 1.55;
@@ -84,7 +86,7 @@ interface Fighter {
   adsWant: boolean;
   sprinting: boolean;
   landInacc: number;
-  recoil: RecoilState;
+  recoil: ReturnType<typeof freshRecoil>;
 }
 
 interface BotMind {
@@ -308,7 +310,7 @@ export class Game {
       adsWant: false,
       sprinting: false,
       landInacc: 0,
-      recoil: { kickP: 0, kickY: 0, punchP: 0, punchY: 0, yawSign: 1 },
+      recoil: freshRecoil(),
     };
     this.fighters.push(f);
     return f;
@@ -356,9 +358,10 @@ export class Game {
     f.weap.ads = 0;
     f.weap.bloom = 0;
     f.weap.ready = 0;
+    f.weap.sprintFade = 0;
     f.weap.charging = false;
     f.weap.charge = 0;
-    f.recoil = { kickP: 0, kickY: 0, punchP: 0, punchY: 0, yawSign: 1 };
+    f.recoil = freshRecoil();
     if (f.player) {
       this.adsLatch = false;
       this.adsAudio = false;
@@ -459,7 +462,7 @@ export class Game {
       }
     }
 
-    if (this.phase === "playing" && you.alive) this.cameraFrom(you);
+    if (this.phase === "playing" && you.alive) this.cameraFrom(you, dt);
     this.syncViewmodels(this.phase === "playing" && you.alive);
     this.drawMinimap();
     this.ui.compassYaw(you.yaw);
@@ -471,9 +474,10 @@ export class Game {
       grounded: you.grounded,
       bloom: you.weap.bloom,
       landInacc: you.landInacc,
-      ready: you.weap.ready,
+      sprintFade: you.weap.sprintFade,
       charge: you.weap.charge,
       charged: WEAPONS[you.weap.id].charge,
+      burst: you.recoil.burst,
     });
     this.ui.setAim(you.weap.ads, crosshairGap(spreadNow, you.weap.ads));
     this.ui.hud.dataset.ads = you.weap.ads.toFixed(2);
@@ -494,6 +498,7 @@ export class Game {
     if (p.adsWant && p.sprinting) {
       p.sprinting = false;
       p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay * 0.45);
+      p.weap.sprintFade = 1;
     }
     p.weap.ads = stepAds(p.weap.ads, p.adsWant && canAds, feel.adsTime, dt);
     if (p.weap.ads > 0.35 && !this.adsAudio) {
@@ -507,7 +512,7 @@ export class Game {
     const look =
       0.00215 *
       this.input.sensitivity *
-      lookScale(this.hipFov, feel.adsFov, p.weap.ads, this.persist.adsSensitivity);
+      lookScale(this.hipFov, feel.adsFov, p.weap.ads, this.persist.adsSensitivity, feel.adsLook);
     p.yaw -= this.input.lookDx * look;
     const iy = this.input.invertY ? -1 : 1;
     p.pitch -= this.input.lookDy * look * iy;
@@ -523,9 +528,13 @@ export class Game {
     const wantSprint = this.input.sprint && p.weap.ads < 0.2 && !p.adsWant;
     if (p.sprinting && !wantSprint) {
       p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
+      p.weap.sprintFade = 1;
     }
     p.sprinting = wantSprint;
-    if (p.sprinting) p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
+    if (p.sprinting) {
+      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
+      p.weap.sprintFade = 1;
+    }
 
     const def = WEAPONS[p.weap.id];
     if (def.charge) {
@@ -534,6 +543,7 @@ export class Game {
         if (p.sprinting) {
           p.sprinting = false;
           p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
+          p.weap.sprintFade = 1;
         }
         if (p.weap.ready <= 0) {
           if (!p.weap.charging) {
@@ -730,15 +740,15 @@ export class Game {
           if (f.hp <= 0) this.kill(f, f.id, true);
         }
         if (f.player) this.sfx.land(prevVy < -14);
-        f.landInacc = Math.min(0.05, 0.012 + (-prevVy - 3) * 0.003);
+        f.landInacc = Math.min(0.075, 0.028 + (-prevVy - 3) * 0.0048);
       } else if (!wasGround && prevVy < -3 && f.player) {
         this.sfx.land(false);
-        f.landInacc = 0.016;
+        f.landInacc = 0.03;
       }
     } else {
       f.coyote -= dt;
     }
-    if (f.landInacc > 0) f.landInacc = Math.max(0, f.landInacc - dt * 0.12);
+    if (f.landInacc > 0) f.landInacc = damp(f.landInacc, 0, LAND_FADE, dt);
     recoverRecoil(f.recoil, FEEL[f.weap.id], dt);
   }
 
@@ -746,7 +756,9 @@ export class Game {
     const feel = FEEL[f.weap.id];
     if (f.weap.cooldown > 0) f.weap.cooldown -= dt;
     if (f.weap.ready > 0) f.weap.ready -= dt;
-    f.weap.bloom = Math.max(0, f.weap.bloom - feel.bloomDecay * dt);
+    if (f.sprinting) f.weap.sprintFade = 1;
+    else f.weap.sprintFade = damp(f.weap.sprintFade, 0, feel.sprintFadeRate, dt);
+    f.weap.bloom = damp(f.weap.bloom, 0, feel.bloomDecay, dt);
     if (f.weap.reloading > 0) {
       f.adsWant = false;
       if (f.player) this.adsLatch = false;
@@ -831,6 +843,7 @@ export class Game {
     if (f.sprinting || f.weap.ready > 0) {
       f.sprinting = false;
       f.weap.ready = Math.max(f.weap.ready, feel.sprintDelay);
+      f.weap.sprintFade = 1;
       return;
     }
     if (f.weap.mag <= 0) {
@@ -857,15 +870,17 @@ export class Game {
       grounded: src.grounded,
       bloom: src.weap.bloom,
       landInacc: src.landInacc,
-      ready: src.weap.ready,
+      sprintFade: src.weap.sprintFade,
       charge: src.weap.charge,
       charged: WEAPONS[src.weap.id].charge,
+      burst: src.recoil.burst,
     });
     src.weap.bloom = Math.min(feel.bloomMax, src.weap.bloom + feel.bloomAdd);
-    applyShotRecoil(src.recoil, feel);
-    if (src.player) src.pitch = Math.min(1.35, src.pitch + feel.recoilPitch * 0.28);
+    applyShotRecoil(src.recoil, feel, src.weap.ads);
     const eye = this.eye(src);
-    const base = this.look(src.yaw + src.recoil.kickY, src.pitch + src.recoil.kickP);
+    const kickY = src.player ? src.recoil.kickY : src.recoil.kickY * 0.35;
+    const kickP = src.player ? src.recoil.kickP : src.recoil.kickP * 0.35;
+    const base = this.look(src.yaw + kickY, src.pitch + kickP);
     if (src.player) {
       this.sfx.fire(src.weap.id);
       this.ui.muzzleHud();
@@ -1014,13 +1029,14 @@ export class Game {
     }
   }
 
-  private cameraFrom(p: Fighter): void {
+  private cameraFrom(p: Fighter, dt: number): void {
     const feel = FEEL[p.weap.id];
-    const zoom = lerp(this.hipFov, feel.adsFov, p.weap.ads);
-    this.camera.fov += (zoom - this.camera.fov) * 0.22;
+    const zoom = lerp(this.hipFov, feel.adsFov, adsWeight(p.weap.ads));
+    this.camera.fov = damp(this.camera.fov, zoom, 22, dt);
     this.camera.updateProjectionMatrix();
     this.camera.position.set(p.x, p.y + EYE, p.z);
-    const roll = -this.lastStrafe * 0.028 * (1 - p.weap.ads * 0.72) + p.recoil.punchY * 0.35;
+    const plant = adsWeight(p.weap.ads);
+    const roll = -this.lastStrafe * 0.038 * (1 - plant * 0.88) + p.recoil.punchY * 0.42;
     this.camera.rotation.set(
       p.pitch + p.recoil.kickP + p.recoil.punchP,
       p.yaw + p.recoil.kickY + p.recoil.punchY,
@@ -1036,16 +1052,24 @@ export class Game {
       if (!you || !g.visible) continue;
       const feel = FEEL[id];
       const pose = poseLerp(feel, you.weap.ads);
+      const plant = adsWeight(you.weap.ads);
       const lower = you.weap.swap > 0 ? Math.sin((you.weap.swap / feel.swapTime) * Math.PI) * 0.42 : 0;
-      const kick = you.recoil.punchP;
+      const kick = you.recoil.punchP + you.recoil.kickP * 0.4;
       const t = this.clock.elapsedTime;
-      const sway = (1 - you.weap.ads * 0.75) * 0.006;
+      const speed01 = Math.min(1, Math.hypot(you.vx, you.vz) / SPRINT);
+      const sway = (1 - plant * 0.94) * (0.007 + speed01 * 0.012);
+      const bob = you.grounded ? speed01 * (1 - plant * 0.92) : 0;
+      const airDip = you.grounded ? 0 : (1 - plant * 0.7) * 0.018;
       g.position.set(
-        pose.px + Math.sin(t * 1.15) * sway + you.recoil.punchY * 0.15,
-        pose.py - kick * 0.55 - lower + Math.cos(t * 1.4) * sway * 0.6,
-        pose.pz + kick * 0.35,
+        pose.px + Math.sin(t * 1.15) * sway + you.recoil.punchY * 0.18,
+        pose.py - kick * 0.7 - lower - airDip + Math.cos(t * (7 + bob * 6)) * sway * (0.7 + bob),
+        pose.pz + kick * 0.42,
       );
-      g.rotation.set(pose.rx - kick * 1.1, pose.ry + you.recoil.punchY * 0.4, pose.rz);
+      g.rotation.set(
+        pose.rx - kick * 1.25 + bob * Math.sin(t * 8) * 0.04,
+        pose.ry + you.recoil.punchY * 0.45,
+        pose.rz + (1 - plant) * this.lastStrafe * 0.04,
+      );
     }
   }
 

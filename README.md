@@ -32,15 +32,15 @@ npm run preview
 - **Scoreboard** Tab · **Pause** Esc
 - First to 20 frags or 6 minutes. Five yardling bots, free-for-all.
 
-Hip fire and sight are two different aims: hip is a wide cone (crosshair opens with bloom, move, and jump). Hold RMB to bring the tool to its yard-iron, drop FOV, slow the look, and tighten the cone. Sprint blocks full-accuracy fire; reload drops you out of sight.
+Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, open crosshair). Hold RMB to raise the tool onto its yard-iron — a short smoothed motion, not a snap — plant the look, and tighten the cone. Recoil kicks the shot and the look; first shot is honest, follow-ups climb, recovery is something you pull against. Jump, land, and sprint leftover open the cone. Sprint blocks full-accuracy fire; reload and swap drop you out of sight.
 
 ### Weapons
 
 | Tool | Feel |
 | --- | --- |
-| **Clipper** | Hitscan hedge shears. Full-auto hip spray; sight for mid-yard taps. Recoil climbs. |
-| **Scatterhose** | Seed-pellet shotgun. Hip is the close cone; sight tightens the washer-ring. |
-| **Stake** | Trellis needle. LMB hold charges, RMB sights / zooms. Charge no longer is the zoom. |
+| **Clipper** | Hitscan hedge shears. Hip sprays; sight is a planted tap gun. Recoil climbs a string. |
+| **Scatterhose** | Seed-pellet shotgun. Hip is a wide hose; sight is still a hose, just denser. Big shove. |
+| **Stake** | Trellis needle. LMB hold charges, RMB sights. Charge is not the zoom. Heavy single kick. |
 
 ### Yards
 

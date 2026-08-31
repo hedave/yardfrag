@@ -77,6 +77,7 @@ export interface WeaponState {
   ads: number;
   bloom: number;
   ready: number;
+  sprintFade: number;
   swap: number;
   pending: WeaponId | null;
 }
@@ -94,6 +95,7 @@ export function makeWeapon(id: WeaponId): WeaponState {
     ads: 0,
     bloom: 0,
     ready: 0,
+    sprintFade: 0,
     swap: 0,
     pending: null,
   };
