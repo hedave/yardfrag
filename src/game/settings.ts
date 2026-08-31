@@ -13,6 +13,9 @@ export const DEFAULT_PERSIST: Persist = {
   sensitivity: 1,
   volume: 0.7,
   invertY: false,
+  adsSensitivity: 0.85,
+  adsToggle: false,
+  fov: 80,
   stats: { ...DEFAULT_STATS },
 };
 
@@ -25,6 +28,9 @@ export function loadPersist(): Persist {
       sensitivity: clampNum(parsed.sensitivity, 0.25, 2.4, 1),
       volume: clampNum(parsed.volume, 0, 1, 0.7),
       invertY: Boolean(parsed.invertY),
+      adsSensitivity: clampNum(parsed.adsSensitivity, 0.35, 1.4, 0.85),
+      adsToggle: Boolean(parsed.adsToggle),
+      fov: clampNum(parsed.fov, 70, 100, 80),
       stats: {
         kills: Math.max(0, parsed.stats?.kills ?? 0),
         deaths: Math.max(0, parsed.stats?.deaths ?? 0),

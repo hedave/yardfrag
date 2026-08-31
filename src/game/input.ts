@@ -7,6 +7,9 @@ export class Input {
   firing = false;
   firePressed = false;
   fireReleased = false;
+  adsHeld = false;
+  adsPressed = false;
+  adsReleased = false;
   reload = false;
   weap: number | null = null;
   cycle = 0;
@@ -60,16 +63,29 @@ export class Input {
       this.lookDy += e.movementY;
     };
     const md = (e: MouseEvent) => {
-      if (e.button === 0 && this.locked) {
+      if (!this.locked) return;
+      if (e.button === 0) {
         this.firing = true;
         this.firePressed = true;
       }
+      if (e.button === 2) {
+        e.preventDefault();
+        this.adsHeld = true;
+        this.adsPressed = true;
+      }
     };
     const mu = (e: MouseEvent) => {
-      if (e.button === 0 && this.locked) {
+      if (e.button === 0) {
         this.firing = false;
         this.fireReleased = true;
       }
+      if (e.button === 2) {
+        this.adsHeld = false;
+        this.adsReleased = true;
+      }
+    };
+    const ctx = (e: Event) => {
+      e.preventDefault();
     };
     const wheel = (e: WheelEvent) => {
       if (!this.locked) return;
@@ -78,10 +94,12 @@ export class Input {
     document.addEventListener("mousemove", mm);
     document.addEventListener("mousedown", md);
     document.addEventListener("mouseup", mu);
+    document.addEventListener("contextmenu", ctx);
     document.addEventListener("wheel", wheel, { passive: true });
     this.unbind.push(() => document.removeEventListener("mousemove", mm));
     this.unbind.push(() => document.removeEventListener("mousedown", md));
     this.unbind.push(() => document.removeEventListener("mouseup", mu));
+    this.unbind.push(() => document.removeEventListener("contextmenu", ctx));
     this.unbind.push(() => document.removeEventListener("wheel", wheel));
 
     const plc = () => {
@@ -135,6 +153,8 @@ export class Input {
     this.lookDy = 0;
     this.firePressed = false;
     this.fireReleased = false;
+    this.adsPressed = false;
+    this.adsReleased = false;
     this.reload = false;
     this.weap = null;
     this.cycle = 0;
@@ -148,6 +168,7 @@ export class Input {
     const joy = this.touchRoot.querySelector("#joy") as HTMLElement;
     const look = this.touchRoot.querySelector("#lookzone") as HTMLElement;
     const fire = this.touchRoot.querySelector("#btn-fire") as HTMLElement;
+    const ads = this.touchRoot.querySelector("#btn-ads") as HTMLElement | null;
     const jump = this.touchRoot.querySelector("#btn-jump") as HTMLElement;
     const sprint = this.touchRoot.querySelector("#btn-sprint") as HTMLElement;
     const reload = this.touchRoot.querySelector("#btn-reload") as HTMLElement;
@@ -224,6 +245,19 @@ export class Input {
         this.fireReleased = true;
       },
     );
+    if (ads) {
+      hold(
+        ads,
+        () => {
+          this.adsHeld = true;
+          this.adsPressed = true;
+        },
+        () => {
+          this.adsHeld = false;
+          this.adsReleased = true;
+        },
+      );
+    }
     hold(jump, () => {
       this.jump = true;
       this.jumpPressed = true;

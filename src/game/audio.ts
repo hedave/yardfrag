@@ -64,6 +64,33 @@ export class Sfx {
     const ctx = this.ensure();
     this.tone(ctx.currentTime, 420, 280, 0.06, "square", 0.05);
     this.tone(ctx.currentTime + 0.08, 320, 200, 0.07, "square", 0.04);
+    this.noiseBurst(ctx.currentTime + 0.02, 0.05, 900, 240, 0.08);
+  }
+
+  reloadSeat(): void {
+    const ctx = this.ensure();
+    this.tone(ctx.currentTime, 260, 200, 0.05, "triangle", 0.05);
+    this.noiseBurst(ctx.currentTime, 0.04, 160, 70, 0.1);
+  }
+
+  ads(into: boolean): void {
+    const ctx = this.ensure();
+    if (into) {
+      this.noiseBurst(ctx.currentTime, 0.06, 400, 140, 0.08);
+      this.tone(ctx.currentTime, 220, 140, 0.05, "sine", 0.03);
+    } else {
+      this.noiseBurst(ctx.currentTime, 0.05, 180, 80, 0.06);
+    }
+  }
+
+  swap(down: boolean): void {
+    const ctx = this.ensure();
+    if (down) {
+      this.tone(ctx.currentTime, 180, 90, 0.07, "sine", 0.05);
+      this.noiseBurst(ctx.currentTime, 0.05, 220, 80, 0.07);
+    } else {
+      this.tone(ctx.currentTime, 140, 240, 0.07, "sine", 0.05);
+    }
   }
 
   hit(head: boolean): void {
@@ -80,7 +107,9 @@ export class Sfx {
   }
 
   land(hard: boolean): void {
-    this.noiseBurst(this.ensure().currentTime, hard ? 0.12 : 0.05, 200, 60, hard ? 0.35 : 0.12);
+    const ctx = this.ensure();
+    this.noiseBurst(ctx.currentTime, hard ? 0.14 : 0.06, hard ? 260 : 180, 50, hard ? 0.42 : 0.2);
+    this.tone(ctx.currentTime, hard ? 90 : 120, 50, hard ? 0.1 : 0.05, "sine", hard ? 0.08 : 0.04);
   }
 
   death(): void {
@@ -102,7 +131,9 @@ export class Sfx {
     this.footAcc += dt * (sprint ? 3.3 : 2.4);
     if (this.footAcc < 1) return;
     this.footAcc = 0;
-    this.noiseBurst(this.ensure().currentTime, 0.04, 180, 70, 0.08);
+    const ctx = this.ensure();
+    this.noiseBurst(ctx.currentTime, sprint ? 0.045 : 0.035, sprint ? 220 : 160, 55, sprint ? 0.14 : 0.09);
+    this.tone(ctx.currentTime, sprint ? 95 : 80, 55, 0.03, "sine", sprint ? 0.035 : 0.022);
   }
 
   ui(): void {

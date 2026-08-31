@@ -16,9 +16,11 @@ import {
   type MapId,
   type Persist,
   type Phase,
+  type WeaponId,
 } from "./types";
 import { UI, type ScoreRow } from "./ui";
 import {
+  canShoot,
   fireInterval,
   makeWeapon,
   WEAPON_ORDER,
@@ -28,6 +30,20 @@ import {
 import type { Arena } from "./world";
 import { BOT_BODIES, PLAYER, PLAYER_HEX, SIGNAL_HEX } from "./palette";
 import { createViewmodel, createYardling, flashYardling, poseYardling } from "./yardling";
+import {
+  applyShotRecoil,
+  cone,
+  crosshairGap,
+  damp,
+  DEFAULT_HIP_FOV,
+  FEEL,
+  lerp,
+  lookScale,
+  poseLerp,
+  recoverRecoil,
+  stepAds,
+  type RecoilState,
+} from "./gunfeel";
 
 const EYE = 1.55;
 const HX = 0.36;
@@ -38,8 +54,6 @@ const WALK = 6.2;
 const SPRINT = 9.4;
 const JUMP_V = 7.55;
 const DEATHCAM_T = 2.55;
-
-const PLAY_FOV = 80;
 
 interface Fighter {
   id: number;
@@ -67,6 +81,10 @@ interface Fighter {
   bot: BotMind | null;
   lastAttacker: number;
   hitFlash: number;
+  adsWant: boolean;
+  sprinting: boolean;
+  landInacc: number;
+  recoil: RecoilState;
 }
 
 interface BotMind {
@@ -77,19 +95,20 @@ interface BotMind {
   nextStrafe: number;
   aimYaw: number;
   aimPitch: number;
+  ads: boolean;
 }
 
 export class Game {
   readonly net = NETCODE;
   private persist: Persist = loadPersist();
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(PLAY_FOV, 1, 0.08, 180);
+  private readonly camera = new THREE.PerspectiveCamera(DEFAULT_HIP_FOV, 1, 0.08, 180);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly clock = new THREE.Clock();
   private readonly sfx = new Sfx();
   private readonly fx: Fx;
   private readonly input: Input;
-  private readonly models = new Map<string, THREE.Group>();
+  private readonly models = new Map<WeaponId, THREE.Group>();
   private arena: Arena | null = null;
   private fighters: Fighter[] = [];
   private phase: Phase = "menu";
@@ -101,10 +120,13 @@ export class Game {
   private killerId = -1;
   private orbit = 0;
   private spawnPick = 0;
-  private recoil = 0;
   private chargedSfx = false;
   private nextId = 1;
   private boardOn = false;
+  private adsLatch = false;
+  private hipFov = DEFAULT_HIP_FOV;
+  private lastStrafe = 0;
+  private adsAudio = false;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -159,6 +181,7 @@ export class Game {
     this.input.sensitivity = p.sensitivity;
     this.input.invertY = p.invertY;
     this.sfx.setVolume(p.volume);
+    this.hipFov = p.fov;
   }
 
   private preview(id: MapId): void {
@@ -208,6 +231,7 @@ export class Game {
         nextStrafe: 0.8,
         aimYaw: bot.yaw,
         aimPitch: 0,
+        ads: false,
       };
       this.place(bot);
     }
@@ -281,6 +305,10 @@ export class Game {
       bot: null,
       lastAttacker: -1,
       hitFlash: 0,
+      adsWant: false,
+      sprinting: false,
+      landInacc: 0,
+      recoil: { kickP: 0, kickY: 0, punchP: 0, punchY: 0, yawSign: 1 },
     };
     this.fighters.push(f);
     return f;
@@ -322,6 +350,19 @@ export class Game {
     f.alive = true;
     f.respawn = 0;
     f.guard = 1.7;
+    f.adsWant = false;
+    f.sprinting = false;
+    f.landInacc = 0;
+    f.weap.ads = 0;
+    f.weap.bloom = 0;
+    f.weap.ready = 0;
+    f.weap.charging = false;
+    f.weap.charge = 0;
+    f.recoil = { kickP: 0, kickY: 0, punchP: 0, punchY: 0, yawSign: 1 };
+    if (f.player) {
+      this.adsLatch = false;
+      this.adsAudio = false;
+    }
     if (f.mesh) {
       f.mesh.visible = true;
       f.mesh.rotation.z = 0;
@@ -347,7 +388,6 @@ export class Game {
     this.input.beginFrame();
     this.ui.tick(dt);
     this.fx.update(dt);
-    this.recoil = Math.max(0, this.recoil - dt * 8);
 
     if (this.phase === "menu") {
       this.orbit += dt;
@@ -423,7 +463,23 @@ export class Game {
     this.syncViewmodels(this.phase === "playing" && you.alive);
     this.drawMinimap();
     this.ui.compassYaw(you.yaw);
-    this.ui.vitals(you.hp, you.weap, you.weap.charge);
+    this.ui.vitals(you.hp, you.weap, you.weap.charge, you.weap.ads);
+    const feel = FEEL[you.weap.id];
+    const spreadNow = cone(feel, {
+      ads: you.weap.ads,
+      speed01: Math.hypot(you.vx, you.vz) / SPRINT,
+      grounded: you.grounded,
+      bloom: you.weap.bloom,
+      landInacc: you.landInacc,
+      ready: you.weap.ready,
+      charge: you.weap.charge,
+      charged: WEAPONS[you.weap.id].charge,
+    });
+    this.ui.setAim(you.weap.ads, crosshairGap(spreadNow, you.weap.ads));
+    this.ui.hud.dataset.ads = you.weap.ads.toFixed(2);
+    this.ui.hud.dataset.fov = this.camera.fov.toFixed(1);
+    this.ui.hud.dataset.spread = spreadNow.toFixed(4);
+    this.ui.hud.dataset.weap = you.weap.id;
     this.ui.meta(this.timeLeft, you.kills, FRAG_LIMIT);
     this.ui.setScoreboard(this.input.tab || this.boardOn, this.rows(), this.arena!.title);
     this.ui.showHint(this.phase === "playing" && !this.input.locked && !this.input.isTouch());
@@ -431,7 +487,27 @@ export class Game {
   }
 
   private controlPlayer(p: Fighter, dt: number): void {
-    const look = 0.00215 * this.input.sensitivity;
+    const feel = FEEL[p.weap.id];
+    this.updateAdsWant(p);
+    const canAds =
+      p.weap.reloading <= 0 && p.weap.swap <= 0 && p.alive && !p.sprinting;
+    if (p.adsWant && p.sprinting) {
+      p.sprinting = false;
+      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay * 0.45);
+    }
+    p.weap.ads = stepAds(p.weap.ads, p.adsWant && canAds, feel.adsTime, dt);
+    if (p.weap.ads > 0.35 && !this.adsAudio) {
+      this.adsAudio = true;
+      this.sfx.ads(true);
+    } else if (p.weap.ads < 0.12 && this.adsAudio) {
+      this.adsAudio = false;
+      this.sfx.ads(false);
+    }
+
+    const look =
+      0.00215 *
+      this.input.sensitivity *
+      lookScale(this.hipFov, feel.adsFov, p.weap.ads, this.persist.adsSensitivity);
     p.yaw -= this.input.lookDx * look;
     const iy = this.input.invertY ? -1 : 1;
     p.pitch -= this.input.lookDy * look * iy;
@@ -444,15 +520,29 @@ export class Game {
     }
     if (this.input.reload) this.startReload(p);
 
+    const wantSprint = this.input.sprint && p.weap.ads < 0.2 && !p.adsWant;
+    if (p.sprinting && !wantSprint) {
+      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
+    }
+    p.sprinting = wantSprint;
+    if (p.sprinting) p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
+
     const def = WEAPONS[p.weap.id];
     if (def.charge) {
-      if (this.input.firing && p.weap.mag > 0 && p.weap.reloading <= 0) {
-        if (!p.weap.charging) {
-          p.weap.charging = true;
-          this.sfx.startCharge();
-          this.chargedSfx = true;
+      const chargeOk = p.weap.mag > 0 && p.weap.reloading <= 0 && p.weap.swap <= 0;
+      if (this.input.firing && chargeOk) {
+        if (p.sprinting) {
+          p.sprinting = false;
+          p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
         }
-        p.weap.charge = Math.min(1, p.weap.charge + dt / def.chargeTime);
+        if (p.weap.ready <= 0) {
+          if (!p.weap.charging) {
+            p.weap.charging = true;
+            this.sfx.startCharge();
+            this.chargedSfx = true;
+          }
+          p.weap.charge = Math.min(1, p.weap.charge + dt / def.chargeTime);
+        }
       }
       if (this.input.fireReleased && p.weap.charging) this.releaseStake(p);
     } else if (def.auto) {
@@ -461,7 +551,8 @@ export class Game {
       this.tryFire(p);
     }
 
-    const speed = this.input.sprint ? SPRINT : WALK;
+    const adsSlow = 1 - p.weap.ads * (1 - feel.adsMove);
+    const speed = (p.sprinting ? SPRINT : WALK) * adsSlow;
     const wishX =
       Math.cos(p.yaw) * this.input.strafe + -Math.sin(p.yaw) * this.input.forward;
     const wishZ =
@@ -469,6 +560,7 @@ export class Game {
     const wlen = Math.hypot(wishX, wishZ);
     const nx = wlen > 0 ? wishX / wlen : 0;
     const nz = wlen > 0 ? wishZ / wlen : 0;
+    this.lastStrafe = damp(this.lastStrafe, this.input.strafe, 10, dt);
     if (p.grounded) {
       p.vx = nx * speed;
       p.vz = nz * speed;
@@ -488,7 +580,17 @@ export class Game {
       p.coyote = 0;
       this.sfx.jump();
     }
-    this.sfx.foot(dt, wlen > 0.2 && p.grounded, this.input.sprint);
+    this.sfx.foot(dt, wlen > 0.2 && p.grounded, p.sprinting);
+  }
+
+  private updateAdsWant(p: Fighter): void {
+    if (this.persist.adsToggle) {
+      if (this.input.adsPressed) this.adsLatch = !this.adsLatch;
+      if (p.weap.reloading > 0 || p.weap.swap > 0) this.adsLatch = false;
+      p.adsWant = this.adsLatch;
+    } else {
+      p.adsWant = this.input.adsHeld;
+    }
   }
 
   private controlBot(f: Fighter, dt: number): void {
@@ -520,12 +622,17 @@ export class Game {
       f.yaw = mind.aimYaw;
       f.pitch = mind.aimPitch;
       const facing = Math.abs(normAngle(f.yaw - yaw)) < (mean ? 0.18 : 0.38);
+      mind.ads = dist > 11 && facing;
+      f.adsWant = mind.ads;
+      const feel = FEEL[f.weap.id];
+      const canAds = f.weap.reloading <= 0 && f.weap.swap <= 0;
+      f.weap.ads = stepAds(f.weap.ads, mind.ads && canAds, feel.adsTime, dt);
       if (facing && mind.react <= 0 && dist < (mean ? 72 : 40)) {
         const def = WEAPONS[f.weap.id];
         if (def.charge) {
           f.weap.charging = true;
           f.weap.charge = Math.min(1, f.weap.charge + dt / def.chargeTime);
-          if (f.weap.charge > 0.72) this.releaseStake(f);
+          if (f.weap.charge > 0.72 && (f.weap.ads > 0.5 || dist < 12)) this.releaseStake(f);
         } else {
           this.tryFire(f);
         }
@@ -535,8 +642,9 @@ export class Game {
       const fx = -Math.sin(f.yaw);
       const fz = -Math.cos(f.yaw);
       const approach = dist > 9 ? 1 : dist < 4 ? -0.4 : 0.15;
-      f.vx = (fx * approach + rightX * 0.7) * speed;
-      f.vz = (fz * approach + rightZ * 0.7) * speed;
+      const move = speed * (1 - f.weap.ads * (1 - feel.adsMove));
+      f.vx = (fx * approach + rightX * 0.7) * move;
+      f.vz = (fz * approach + rightZ * 0.7) * move;
       if (f.grounded && Math.random() < dt * 0.15) f.vy = JUMP_V * 0.85;
     } else {
       const ways = this.arena!.waypoints;
@@ -556,6 +664,9 @@ export class Game {
         f.vz = (dz / len) * speed;
       }
       if (f.weap.charging) this.cancelCharge(f);
+      mind.ads = false;
+      f.adsWant = false;
+      f.weap.ads = stepAds(f.weap.ads, false, FEEL[f.weap.id].adsTime, dt);
     }
     if (f.weap.mag <= 0) this.startReload(f);
   }
@@ -619,15 +730,26 @@ export class Game {
           if (f.hp <= 0) this.kill(f, f.id, true);
         }
         if (f.player) this.sfx.land(prevVy < -14);
+        f.landInacc = Math.min(0.05, 0.012 + (-prevVy - 3) * 0.003);
+      } else if (!wasGround && prevVy < -3 && f.player) {
+        this.sfx.land(false);
+        f.landInacc = 0.016;
       }
     } else {
       f.coyote -= dt;
     }
+    if (f.landInacc > 0) f.landInacc = Math.max(0, f.landInacc - dt * 0.12);
+    recoverRecoil(f.recoil, FEEL[f.weap.id], dt);
   }
 
   private tickWeapon(f: Fighter, dt: number): void {
+    const feel = FEEL[f.weap.id];
     if (f.weap.cooldown > 0) f.weap.cooldown -= dt;
+    if (f.weap.ready > 0) f.weap.ready -= dt;
+    f.weap.bloom = Math.max(0, f.weap.bloom - feel.bloomDecay * dt);
     if (f.weap.reloading > 0) {
+      f.adsWant = false;
+      if (f.player) this.adsLatch = false;
       f.weap.reloading -= dt;
       if (f.weap.reloading <= 0) {
         const def = WEAPONS[f.weap.id];
@@ -635,21 +757,42 @@ export class Game {
         const take = Math.min(need, f.weap.reserve);
         f.weap.mag += take;
         f.weap.reserve -= take;
+        if (f.player) this.sfx.reloadSeat();
+      }
+    }
+    if (f.weap.swap > 0) {
+      f.weap.swap -= dt;
+      const half = feel.swapTime * 0.5;
+      if (f.weap.pending && f.weap.swap <= half) {
+        const keepAds = 0;
+        f.weap = makeWeapon(f.weap.pending);
+        f.weap.ads = keepAds;
+        f.weap.swap = half;
+        f.weap.pending = null;
+        if (f.player) this.sfx.swap(false);
       }
     }
   }
 
   private switchWeap(f: Fighter, index: number): void {
     const id = WEAPON_ORDER[((index % 3) + 3) % 3]!;
-    if (f.weap.id === id) return;
+    if (f.weap.id === id || f.weap.pending === id) return;
+    if (f.weap.swap > 0 && f.weap.pending) return;
     this.cancelCharge(f);
-    f.weap = makeWeapon(id);
+    f.adsWant = false;
+    if (f.player) this.adsLatch = false;
+    f.weap.pending = id;
+    f.weap.swap = FEEL[f.weap.id].swapTime;
+    if (f.player) this.sfx.swap(true);
   }
 
   private startReload(f: Fighter): void {
     const def = WEAPONS[f.weap.id];
     if (f.weap.reloading > 0 || f.weap.mag >= def.mag || f.weap.reserve <= 0) return;
+    if (f.weap.swap > 0) return;
     this.cancelCharge(f);
+    f.adsWant = false;
+    if (f.player) this.adsLatch = false;
     f.weap.reloading = def.reload;
     if (f.player) this.sfx.reload();
   }
@@ -671,26 +814,33 @@ export class Game {
       this.sfx.stopCharge();
       this.chargedSfx = false;
     }
-    if (f.weap.mag <= 0 || f.weap.reloading > 0) return;
+    if (f.weap.mag <= 0 || f.weap.reloading > 0 || f.weap.swap > 0) return;
+    if (f.weap.ready > 0) return;
     const def = WEAPONS.stake;
     f.weap.mag -= 1;
     f.weap.cooldown = fireInterval("stake");
     const dmg = 44 + charge * (def.damage - 44);
-    const spread = charge > 0.85 ? 0 : 0.018;
-    this.shoot(f, dmg, 1, spread, def.range);
+    this.shoot(f, dmg, 1, def.range);
     if (f.weap.mag <= 0) this.startReload(f);
   }
 
   private tryFire(f: Fighter): void {
     const def = WEAPONS[f.weap.id];
-    if (f.weap.reloading > 0 || f.weap.cooldown > 0) return;
+    const feel = FEEL[f.weap.id];
+    if (f.weap.reloading > 0 || f.weap.cooldown > 0 || f.weap.swap > 0) return;
+    if (f.sprinting || f.weap.ready > 0) {
+      f.sprinting = false;
+      f.weap.ready = Math.max(f.weap.ready, feel.sprintDelay);
+      return;
+    }
     if (f.weap.mag <= 0) {
       this.startReload(f);
       return;
     }
+    if (!canShoot(f.weap)) return;
     f.weap.mag -= 1;
     f.weap.cooldown = fireInterval(f.weap.id);
-    this.shoot(f, def.damage, def.pellets, def.spread, def.range);
+    this.shoot(f, def.damage, def.pellets, def.range);
     if (f.weap.mag <= 0) this.startReload(f);
   }
 
@@ -698,20 +848,33 @@ export class Game {
     src: Fighter,
     damage: number,
     pellets: number,
-    spread: number,
     range: number,
   ): void {
+    const feel = FEEL[src.weap.id];
+    const spread = cone(feel, {
+      ads: src.weap.ads,
+      speed01: Math.hypot(src.vx, src.vz) / SPRINT,
+      grounded: src.grounded,
+      bloom: src.weap.bloom,
+      landInacc: src.landInacc,
+      ready: src.weap.ready,
+      charge: src.weap.charge,
+      charged: WEAPONS[src.weap.id].charge,
+    });
+    src.weap.bloom = Math.min(feel.bloomMax, src.weap.bloom + feel.bloomAdd);
+    applyShotRecoil(src.recoil, feel);
+    if (src.player) src.pitch = Math.min(1.35, src.pitch + feel.recoilPitch * 0.28);
     const eye = this.eye(src);
-    const base = this.look(src.yaw, src.pitch);
+    const base = this.look(src.yaw + src.recoil.kickY, src.pitch + src.recoil.kickP);
     if (src.player) {
       this.sfx.fire(src.weap.id);
       this.ui.muzzleHud();
-      this.recoil = 1;
-      const muzzle = new THREE.Vector3(0.18, -0.12, -0.7).applyMatrix4(this.camera.matrixWorld);
+      const muzzle = new THREE.Vector3(0.12, -0.08, -0.55).applyMatrix4(this.camera.matrixWorld);
       this.fx.flash(muzzle.x, muzzle.y, muzzle.z);
     }
     let any = false;
     let head = false;
+    let hitY = src.y + EYE;
     for (let i = 0; i < pellets; i++) {
       const dir = spreadDir(base.x, base.y, base.z, spread);
       const hit = this.traceShot(src, eye.x, eye.y, eye.z, dir.x, dir.y, dir.z, range);
@@ -722,13 +885,15 @@ export class Game {
       } else {
         any = true;
         if (hit.head) head = true;
+        hitY = hit.y;
+        if (src.player) this.fx.flesh(hit.x, hit.y, hit.z, hit.head);
         const fall = 1 - (hit.t / range) * (src.weap.id === "hose" ? 0.72 : 0.18);
         const dmg = damage * Math.max(0.25, fall) * (hit.head ? 1.55 : 1);
         this.hurt(hit.target, dmg, src);
       }
     }
     if (any && src.player) {
-      this.ui.hit(head);
+      this.ui.hit(head, hitY - src.y);
       this.sfx.hit(head);
     }
   }
@@ -799,6 +964,8 @@ export class Game {
     target.deaths += 1;
     target.vx = target.vz = 0;
     this.cancelCharge(target);
+    target.weap.ads = 0;
+    target.adsWant = false;
     const killer = this.fighters.find((f) => f.id === killerId) ?? target;
     if (killer.id !== target.id) killer.kills += 1;
     const def = WEAPONS[killer.weap.id];
@@ -848,22 +1015,37 @@ export class Game {
   }
 
   private cameraFrom(p: Fighter): void {
-    const def = WEAPONS[p.weap.id];
-    const zoom = def.zoomFov && (p.weap.charging || p.weap.charge > 0.05) ? def.zoomFov : PLAY_FOV;
-    this.camera.fov += (zoom - this.camera.fov) * 0.18;
+    const feel = FEEL[p.weap.id];
+    const zoom = lerp(this.hipFov, feel.adsFov, p.weap.ads);
+    this.camera.fov += (zoom - this.camera.fov) * 0.22;
     this.camera.updateProjectionMatrix();
     this.camera.position.set(p.x, p.y + EYE, p.z);
-    this.camera.rotation.set(p.pitch, p.yaw, 0, "YXZ");
+    const roll = -this.lastStrafe * 0.028 * (1 - p.weap.ads * 0.72) + p.recoil.punchY * 0.35;
+    this.camera.rotation.set(
+      p.pitch + p.recoil.kickP + p.recoil.punchP,
+      p.yaw + p.recoil.kickY + p.recoil.punchY,
+      roll,
+      "YXZ",
+    );
   }
 
   private syncViewmodels(show: boolean): void {
     const you = this.fighters.find((f) => f.player);
     for (const [id, g] of this.models) {
       g.visible = Boolean(show && you && you.weap.id === id);
-      if (g.visible) {
-        g.position.set(0, -this.recoil * 0.04, this.recoil * 0.08);
-        g.rotation.x = -this.recoil * 0.12;
-      }
+      if (!you || !g.visible) continue;
+      const feel = FEEL[id];
+      const pose = poseLerp(feel, you.weap.ads);
+      const lower = you.weap.swap > 0 ? Math.sin((you.weap.swap / feel.swapTime) * Math.PI) * 0.42 : 0;
+      const kick = you.recoil.punchP;
+      const t = this.clock.elapsedTime;
+      const sway = (1 - you.weap.ads * 0.75) * 0.006;
+      g.position.set(
+        pose.px + Math.sin(t * 1.15) * sway + you.recoil.punchY * 0.15,
+        pose.py - kick * 0.55 - lower + Math.cos(t * 1.4) * sway * 0.6,
+        pose.pz + kick * 0.35,
+      );
+      g.rotation.set(pose.rx - kick * 1.1, pose.ry + you.recoil.punchY * 0.4, pose.rz);
     }
   }
 

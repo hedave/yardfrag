@@ -152,48 +152,85 @@ export function createViewmodel(id: WeaponId): THREE.Group {
     emissive: PLAYER,
     emissiveIntensity: 0.22,
   });
+  const iron = new THREE.MeshStandardMaterial({
+    color: 0xd8e2e8,
+    metalness: 0.7,
+    roughness: 0.28,
+    emissive: 0x6a8088,
+    emissiveIntensity: 0.18,
+  });
+
+  const irons = new THREE.Group();
+  irons.name = "irons";
 
   if (id === "clipper") {
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.7), cedar);
-    body.position.set(0.22, -0.18, -0.55);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.62), cedar);
+    body.position.set(0, 0, -0.28);
     g.add(body);
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.55), tin);
-    blade.position.set(0.22, -0.1, -0.95);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.04, 0.5), tin);
+    blade.position.set(0, 0.055, -0.72);
     g.add(blade);
     for (let i = 0; i < 6; i++) {
-      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.04), tin);
-      tooth.position.set(0.22, -0.07, -0.72 - i * 0.08);
+      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.028, 0.035), tin);
+      tooth.position.set(0, 0.08, -0.52 - i * 0.075);
       g.add(tooth);
     }
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.1), clay);
-    grip.position.set(0.22, -0.32, -0.38);
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.2, 0.09), clay);
+    grip.position.set(0, -0.16, 0.02);
     g.add(grip);
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.028, 0.05), cedar);
+    hood.position.set(0, 0.09, -0.08);
+    const rearL = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.07, 0.016), iron);
+    rearL.position.set(-0.03, 0.122, -0.1);
+    const rearR = rearL.clone();
+    rearR.position.x = 0.03;
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.012, 0.016), iron);
+    bridge.position.set(0, 0.09, -0.1);
+    const front = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.012), iron);
+    front.position.set(0, 0.102, -0.94);
+    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), clay);
+    bead.position.set(0, 0.134, -0.94);
+    irons.add(hood, rearL, rearR, bridge, front, bead);
   } else if (id === "hose") {
-    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.34, 8), clay);
+    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.32, 8), clay);
     tank.rotation.z = Math.PI / 2;
-    tank.position.set(0.26, -0.2, -0.48);
+    tank.position.set(0, -0.02, -0.12);
     g.add(tank);
-    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.11, 0.28, 8), tin);
+    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.1, 0.3, 8), tin);
     nozzle.rotation.x = Math.PI / 2;
-    nozzle.position.set(0.26, -0.18, -0.78);
+    nozzle.position.set(0, 0, -0.42);
     g.add(nozzle);
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.1), cedar);
-    grip.position.set(0.26, -0.34, -0.42);
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.2, 0.1), cedar);
+    grip.position.set(0, -0.16, 0.04);
     g.add(grip);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.01, 8, 18), iron);
+    ring.position.set(0, 0.078, -0.16);
+    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), clay);
+    bead.position.set(0, 0.076, -0.56);
+    irons.add(ring, bead);
   } else {
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 1.15, 8), tin);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.032, 1.18, 8), tin);
     barrel.rotation.x = Math.PI / 2;
-    barrel.position.set(0.2, -0.16, -0.85);
+    barrel.position.set(0, 0, -0.48);
     g.add(barrel);
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.36), cedar);
-    stock.position.set(0.2, -0.22, -0.32);
+    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.11, 0.34), cedar);
+    stock.position.set(0, -0.06, 0.12);
     g.add(stock);
-    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.18, 8), clay);
-    scope.rotation.x = Math.PI / 2;
-    scope.position.set(0.2, -0.06, -0.55);
-    g.add(scope);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.08, 8), clay);
+    collar.rotation.x = Math.PI / 2;
+    collar.position.set(0, 0, -0.08);
+    g.add(collar);
+    const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.009, 8, 20), iron);
+    hoop.position.set(0, 0.082, -0.04);
+    const pin = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.05, 0.01), iron);
+    pin.position.set(0, 0.078, -1.02);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), clay);
+    tip.position.set(0, 0.108, -1.02);
+    irons.add(hoop, pin, tip);
   }
 
+  g.add(irons);
+  g.userData.irons = irons;
   g.traverse((o) => {
     if (o instanceof THREE.Mesh) o.castShadow = false;
   });

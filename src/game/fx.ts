@@ -8,6 +8,7 @@ export class Fx {
   private tracers: THREE.Line[] = [];
   private tracerAge: number[] = [];
   private readonly sparkMat = new THREE.MeshBasicMaterial({ color: 0xffc07a });
+  private readonly fleshMat = new THREE.MeshBasicMaterial({ color: 0xf5ff3d });
   private readonly tracerMat = new THREE.LineBasicMaterial({
     color: 0xffe0a8,
     transparent: true,
@@ -23,6 +24,17 @@ export class Fx {
     this.muzzle.position.set(x, y, z);
     this.muzzle.intensity = 7;
     this.muzzleAge = 0.05;
+  }
+
+  flesh(x: number, y: number, z: number, head: boolean): void {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(head ? 0.07 : 0.045, 5, 5),
+      head ? this.fleshMat : this.sparkMat,
+    );
+    mesh.position.set(x, y, z);
+    this.scene.add(mesh);
+    this.sparks.push(mesh);
+    this.sparkAge.push(head ? 0.22 : 0.14);
   }
 
   spark(x: number, y: number, z: number, nx: number, ny: number, nz: number): void {

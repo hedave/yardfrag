@@ -45,7 +45,8 @@ body {
 }
 
 #hurt,
-#flash {
+#flash,
+#vignette {
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -60,6 +61,12 @@ body {
 
 #flash {
   background: rgba(255, 214, 150, 0.28);
+}
+
+#vignette {
+  z-index: 4;
+  background: radial-gradient(circle at center, transparent 42%, rgba(8, 6, 5, 0.72) 100%);
+  transition: opacity 90ms linear;
 }
 
 .hidden {
@@ -110,11 +117,12 @@ body {
 }
 
 #crosshair {
+  --gap: 10px;
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 28px;
-  height: 28px;
+  width: 88px;
+  height: 88px;
   transform: translate(-50%, -50%);
 }
 
@@ -126,47 +134,51 @@ body {
 
 .ch-n,
 .ch-s {
-  left: 12px;
+  left: 42px;
   width: 4px;
-  height: 8px;
+  height: 9px;
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 .ch-n {
-  top: 0;
+  top: calc(44px - var(--gap) - 9px);
 }
 
 .ch-s {
-  bottom: 0;
+  top: calc(44px + var(--gap));
   transform: rotate(180deg);
 }
 
 .ch-e,
 .ch-w {
-  top: 12px;
-  width: 8px;
+  top: 42px;
+  width: 9px;
   height: 4px;
 }
 
 .ch-e {
-  right: 0;
+  left: calc(44px + var(--gap));
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
 .ch-w {
-  left: 0;
+  left: calc(44px - var(--gap) - 9px);
   clip-path: polygon(100% 0, 100% 100%, 0 50%);
 }
 
 .ch-dot {
   position: absolute;
-  left: 12px;
-  top: 12px;
+  left: 42px;
+  top: 42px;
   width: 4px;
   height: 4px;
   background: #ffffff;
   box-shadow: 0 0 0 2px var(--hair-stroke);
   border-radius: 1px;
+}
+
+#crosshair.ads .ch {
+  opacity: 0;
 }
 
 #crosshair.hit .ch,
@@ -178,9 +190,9 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 22px;
-  height: 22px;
-  transform: translate(-50%, -50%) rotate(45deg) scale(0.4);
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%) rotate(45deg) scale(0.35);
   border: 2px solid transparent;
   opacity: 0;
 }
@@ -189,8 +201,39 @@ body {
   opacity: 1;
   border-color: #ffffff;
   box-shadow: 0 0 0 2px var(--hair-stroke);
-  transform: translate(-50%, -50%) rotate(45deg) scale(1);
+  transform: translate(-50%, -50%) rotate(45deg) scale(1.15);
   transition: none;
+}
+
+#hitmarker.head {
+  width: 34px;
+  height: 34px;
+  border-color: var(--straw);
+}
+
+#headpip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border: 2px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#headpip.show {
+  opacity: 1;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--hair-stroke);
+}
+
+#headpip.head {
+  width: 12px;
+  height: 12px;
+  border-color: var(--straw);
+  background: rgba(245, 255, 61, 0.25);
 }
 
 #killfeed {
@@ -610,6 +653,7 @@ h1 {
 }
 
 #btn-fire,
+#btn-ads,
 #btn-jump,
 #btn-sprint,
 #btn-reload,
@@ -634,6 +678,15 @@ h1 {
   background: rgba(211, 107, 58, 0.82);
   color: #1c1612;
   font-weight: 700;
+}
+
+#btn-ads {
+  right: 132px;
+  bottom: 118px;
+  width: 72px;
+  height: 44px;
+  letter-spacing: 0.1em;
+  font-size: 12px;
 }
 
 #btn-jump {
