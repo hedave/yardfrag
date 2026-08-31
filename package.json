@@ -1,0 +1,20 @@
+{
+  "name": "yardfrag",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Yardfrag — original browser backyard arena shooter",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "typescript": "~5.7.3",
+    "vite": "^6.2.0"
+  }
+}
