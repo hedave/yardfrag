@@ -152,6 +152,7 @@ export class UI {
 
   showMenu(which: "home" | "pause" | "results"): void {
     this.menu.classList.remove("playing", "paused", "results", "hidden");
+    this.hud.classList.toggle("menu-over", which === "pause" || which === "results");
     if (which === "home") {
       this.showPanel("panel-home");
     } else if (which === "pause") {
@@ -166,6 +167,7 @@ export class UI {
   hideMenu(): void {
     this.menu.classList.add("playing");
     this.menu.classList.remove("paused", "results");
+    this.hud.classList.remove("menu-over");
   }
 
   showHud(on: boolean): void {

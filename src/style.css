@@ -95,7 +95,7 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  height: 52px;
+  height: 68px;
   background: #0a0808;
   transform: scaleY(0);
   transition: transform 180ms ease-out;
@@ -119,8 +119,23 @@ body {
 #hud.deathcam #crosshair,
 #hud.deathcam #sight-iron,
 #hud.deathcam #minimap,
-#hud.deathcam #compass {
-  opacity: 0.28;
+#hud.deathcam #compass,
+#hud.deathcam #match-meta {
+  opacity: 0.18;
+}
+
+#hud.deathcam .vital.crit #hp-num {
+  animation: none;
+}
+
+#hud.menu-over #compass,
+#hud.menu-over #minimap,
+#hud.menu-over #vitals,
+#hud.menu-over #match-meta,
+#hud.menu-over #hint,
+#hud.menu-over #crosshair,
+#hud.menu-over #sight-iron {
+  opacity: 0.2;
 }
 
 #compass {
@@ -258,10 +273,10 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid var(--clay);
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 2px solid var(--straw);
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--hair-stroke);
   opacity: 0;
@@ -271,11 +286,11 @@ body {
 #sight-iron::after {
   content: "";
   position: absolute;
-  left: 7px;
-  top: 7px;
+  left: 11px;
+  top: 11px;
   width: 2px;
   height: 2px;
-  background: var(--straw);
+  background: var(--clay);
   box-shadow: 0 0 0 1px var(--hair-stroke);
 }
 
@@ -482,12 +497,13 @@ body {
 #sight-chip {
   display: none;
   margin-left: 8px;
-  padding: 1px 6px 0;
-  font-size: 9px;
-  letter-spacing: 0.18em;
+  padding: 2px 7px 1px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
   color: #1c1612;
   background: var(--straw);
   vertical-align: 1px;
+  box-shadow: 0 0 0 1px #111;
 }
 
 #sight-chip.on {
@@ -745,7 +761,8 @@ body {
 #menu-card {
   width: min(400px, 100%);
   max-height: calc(100vh - 80px);
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 22px 22px 18px;
   background: linear-gradient(180deg, rgba(42, 33, 27, 0.94), rgba(22, 16, 13, 0.92));
   border: 1px solid rgba(255, 138, 61, 0.32);
@@ -901,6 +918,7 @@ h1 {
 .field input[type="range"] {
   display: block;
   width: 100%;
+  max-width: 100%;
   margin-top: 6px;
 }
 
