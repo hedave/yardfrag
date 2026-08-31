@@ -1,16 +1,17 @@
 :root {
   --soil: #1c1612;
   --soil-2: #2a211b;
-  --clay: #d36b3a;
-  --clay-dim: #a24e28;
-  --moss: #7ea35a;
-  --straw: #e8d5a3;
+  --clay: #ff8a3d;
+  --clay-dim: #c45c28;
+  --moss: #3dff6a;
+  --straw: #f5ff3d;
   --indigo: #12151c;
-  --tin: #9aa7a3;
-  --ink: #f3ead8;
-  --muted: #b7aa96;
-  --danger: #e25a3a;
+  --tin: #8fd4de;
+  --ink: #f7f4ea;
+  --muted: #c8c0b0;
+  --danger: #ff2a1a;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --hair-stroke: #111111;
   font-synthesis: none;
 }
 
@@ -54,7 +55,7 @@ body {
 }
 
 #hurt {
-  background: radial-gradient(circle at center, transparent 40%, rgba(120, 16, 8, 0.55));
+  background: radial-gradient(circle at center, transparent 38%, rgba(255, 42, 26, 0.62));
 }
 
 #flash {
@@ -81,8 +82,8 @@ body {
   width: min(420px, 70vw);
   height: 28px;
   overflow: hidden;
-  border: 1px solid rgba(232, 213, 163, 0.28);
-  background: linear-gradient(180deg, rgba(28, 22, 18, 0.72), rgba(28, 22, 18, 0.4));
+  border: 1px solid rgba(17, 17, 17, 0.7);
+  background: linear-gradient(180deg, rgba(10, 10, 12, 0.78), rgba(10, 10, 12, 0.5));
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
 }
 
@@ -103,8 +104,8 @@ body {
   right: 16px;
   width: 132px;
   height: 132px;
-  border: 2px solid rgba(211, 107, 58, 0.7);
-  background: rgba(18, 14, 12, 0.72);
+  border: 2px solid var(--clay);
+  background: rgba(10, 10, 12, 0.78);
   box-shadow: var(--shadow);
 }
 
@@ -119,8 +120,8 @@ body {
 
 .ch {
   position: absolute;
-  background: var(--clay);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  background: var(--straw);
+  box-shadow: 0 0 0 2px var(--hair-stroke);
 }
 
 .ch-n,
@@ -163,13 +164,14 @@ body {
   top: 12px;
   width: 4px;
   height: 4px;
-  background: var(--straw);
+  background: #ffffff;
+  box-shadow: 0 0 0 2px var(--hair-stroke);
   border-radius: 1px;
 }
 
 #crosshair.hit .ch,
 #crosshair.hit .ch-dot {
-  background: var(--moss);
+  background: #ffffff;
 }
 
 #hitmarker {
@@ -185,7 +187,8 @@ body {
 
 #hitmarker.show {
   opacity: 1;
-  border-color: var(--straw);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px var(--hair-stroke);
   transform: translate(-50%, -50%) rotate(45deg) scale(1);
   transition: none;
 }
@@ -278,7 +281,7 @@ body {
 #hp-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #5d7a3a, var(--moss));
+  background: linear-gradient(90deg, #1f8a3a, var(--moss));
 }
 
 #hp-num {

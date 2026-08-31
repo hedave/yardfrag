@@ -64,3 +64,7 @@ Local bots ship first. Client-server netcode is intentionally stubbed in `src/ga
 ## Stack
 
 Vite + TypeScript + Three.js. Geometry is built in code. No AWS, secrets, accounts, or ads.
+
+## Readability
+
+Hostile lime `#F5FF3D` is reserved for bot outlines, nameplates, and the crosshair (dark stroke so it holds on peach *and* indigo skies). Maps do not share one brown: Potting Hall is a warm greenhouse afternoon; Cistern Roofs is cool moonlit tin. Hex table: [PALETTE.md](PALETTE.md).

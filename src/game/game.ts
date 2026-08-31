@@ -26,7 +26,8 @@ import {
   type WeaponState,
 } from "./weapons";
 import type { Arena } from "./world";
-import { createViewmodel, createYardling, poseYardling } from "./yardling";
+import { BOT_BODIES, PLAYER, PLAYER_HEX, SIGNAL_HEX } from "./palette";
+import { createViewmodel, createYardling, flashYardling, poseYardling } from "./yardling";
 
 const EYE = 1.55;
 const HX = 0.36;
@@ -38,8 +39,7 @@ const SPRINT = 9.4;
 const JUMP_V = 7.55;
 const DEATHCAM_T = 2.55;
 
-const BODY_TINT = [0x3d5a80, 0x4f6a3a, 0x6b3a4a, 0x3a4a6b, 0x6b5a2a];
-const POT_TINT = [0xc45c32, 0xa24e28, 0xd36b3a, 0xb85a30, 0x8a3e22];
+const PLAY_FOV = 80;
 
 interface Fighter {
   id: number;
@@ -66,6 +66,7 @@ interface Fighter {
   coyote: number;
   bot: BotMind | null;
   lastAttacker: number;
+  hitFlash: number;
 }
 
 interface BotMind {
@@ -82,7 +83,7 @@ export class Game {
   readonly net = NETCODE;
   private persist: Persist = loadPersist();
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(75, 1, 0.08, 180);
+  private readonly camera = new THREE.PerspectiveCamera(PLAY_FOV, 1, 0.08, 180);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly clock = new THREE.Clock();
   private readonly sfx = new Sfx();
@@ -115,7 +116,7 @@ export class Game {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMappingExposure = 1.12;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.camera.rotation.order = "YXZ";
     this.fx = new Fx(this.scene);
@@ -176,6 +177,7 @@ export class Game {
     this.scene.add(this.arena.group);
     this.scene.background = new THREE.Color(this.arena.sky);
     this.scene.fog = new THREE.Fog(this.arena.fogColor, this.arena.fogNear, this.arena.fogFar);
+    this.renderer.toneMappingExposure = this.arena.exposure;
   }
 
   private startMatch(map: MapId, diff: Difficulty): void {
@@ -193,10 +195,10 @@ export class Game {
     this.ui.showTouch(this.input.isTouch());
     this.ui.setDeath(false);
     this.ui.showHint(!this.input.isTouch());
-    const you = this.makeFighter(PLAYER_NAME, true, 0xc45c32, 0x6b4433);
+    const you = this.makeFighter(PLAYER_NAME, true, PLAYER);
     this.place(you);
     for (let i = 0; i < BOT_COUNT; i++) {
-      const bot = this.makeFighter(BOT_NAMES[i] ?? `Yardling ${i}`, false, BODY_TINT[i]!, POT_TINT[i]!);
+      const bot = this.makeFighter(BOT_NAMES[i] ?? `Yardling ${i}`, false, BOT_BODIES[i] ?? 0xe11d74);
       bot.weap = makeWeapon(WEAPON_ORDER[i % 3]!);
       bot.bot = {
         react: 0,
@@ -250,8 +252,8 @@ export class Game {
     this.ui.showMenu("results");
   }
 
-  private makeFighter(name: string, player: boolean, color: number, pot: number): Fighter {
-    const mesh = player ? null : createYardling(color, pot);
+  private makeFighter(name: string, player: boolean, color: number): Fighter {
+    const mesh = player ? null : createYardling(name, color);
     if (mesh) this.scene.add(mesh);
     const f: Fighter = {
       id: this.nextId++,
@@ -278,6 +280,7 @@ export class Game {
       coyote: 0,
       bot: null,
       lastAttacker: -1,
+      hitFlash: 0,
     };
     this.fighters.push(f);
     return f;
@@ -322,6 +325,10 @@ export class Game {
     if (f.mesh) {
       f.mesh.visible = true;
       f.mesh.rotation.z = 0;
+      const plate = f.mesh.getObjectByName("nameplate");
+      const chev = f.mesh.getObjectByName("chevron");
+      if (plate) plate.visible = true;
+      if (chev) chev.visible = true;
     }
   }
 
@@ -386,12 +393,20 @@ export class Game {
 
     for (const f of this.fighters) {
       if (f.guard > 0) f.guard -= dt;
+      if (f.hitFlash > 0) {
+        f.hitFlash -= dt;
+        if (f.mesh) flashYardling(f.mesh, f.hitFlash > 0);
+      }
       this.tickWeapon(f, dt);
       if (!f.alive) {
         f.respawn -= dt;
         if (f.respawn <= 0 && !f.player) this.place(f);
         if (f.mesh && !f.alive) {
           f.mesh.rotation.z = Math.min(1.3, f.mesh.rotation.z + dt * 3);
+          const plate = f.mesh.getObjectByName("nameplate");
+          const chev = f.mesh.getObjectByName("chevron");
+          if (plate) plate.visible = false;
+          if (chev) chev.visible = false;
         }
         continue;
       }
@@ -766,6 +781,10 @@ export class Game {
     if (!target.alive || target.guard > 0) return;
     target.hp -= dmg;
     target.lastAttacker = src.id;
+    if (target.mesh) {
+      target.hitFlash = 0.14;
+      flashYardling(target.mesh, true);
+    }
     if (target.player) {
       this.ui.hurtFlash();
       this.sfx.hurt();
@@ -830,7 +849,7 @@ export class Game {
 
   private cameraFrom(p: Fighter): void {
     const def = WEAPONS[p.weap.id];
-    const zoom = def.zoomFov && (p.weap.charging || p.weap.charge > 0.05) ? def.zoomFov : 75;
+    const zoom = def.zoomFov && (p.weap.charging || p.weap.charge > 0.05) ? def.zoomFov : PLAY_FOV;
     this.camera.fov += (zoom - this.camera.fov) * 0.18;
     this.camera.updateProjectionMatrix();
     this.camera.position.set(p.x, p.y + EYE, p.z);
@@ -854,7 +873,7 @@ export class Game {
     const w = this.ui.minimap.width;
     const h = this.ui.minimap.height;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#1a1410";
+    ctx.fillStyle = this.arena.id === "potting" ? "#3a2a18" : "#0e1824";
     ctx.fillRect(0, 0, w, h);
     const you = this.player();
     const scale = 2.15;
@@ -869,13 +888,13 @@ export class Game {
     }
     for (const f of this.fighters) {
       if (!f.alive) continue;
-      ctx.fillStyle = f.player ? "#d36b3a" : "#7ea35a";
+      ctx.fillStyle = f.player ? PLAYER_HEX : SIGNAL_HEX;
       ctx.beginPath();
       ctx.arc(f.x, f.z, f.player ? 0.85 : 0.7, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
-    ctx.strokeStyle = "#d36b3a";
+    ctx.strokeStyle = PLAYER_HEX;
     ctx.lineWidth = 3;
     ctx.strokeRect(1, 1, w - 2, h - 2);
   }
