@@ -45,7 +45,8 @@ export class Input {
 
   attach(): void {
     const onKey = (e: KeyboardEvent, down: boolean) => {
-      if (["Space", "Tab", "ControlLeft", "ControlRight"].includes(e.code)) e.preventDefault();
+      // Ctrl+F is browser Find; Ctrl+A/S/D steal crouch-strafe. Eat game keys.
+      if (GAME_KEYS.has(e.code)) e.preventDefault();
       if (down) this.keys.add(e.code);
       else this.keys.delete(e.code);
       if (down && e.code === "Escape") this.pause = true;
@@ -341,6 +342,25 @@ export class Input {
     stick.style.transform = `translate(${dx * 28}px, ${dy * 28}px)`;
   }
 }
+
+const GAME_KEYS = new Set([
+  "Space",
+  "Tab",
+  "ControlLeft",
+  "ControlRight",
+  "ShiftLeft",
+  "ShiftRight",
+  "KeyW",
+  "KeyA",
+  "KeyS",
+  "KeyD",
+  "KeyF",
+  "KeyR",
+  "KeyB",
+  "Digit1",
+  "Digit2",
+  "Digit3",
+]);
 
 function clamp(n: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, n));
