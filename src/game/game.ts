@@ -20,6 +20,25 @@ import {
 } from "./types";
 import { UI, type ScoreRow } from "./ui";
 import {
+  beginCook,
+  cancelCook,
+  createGadgetMesh,
+  cycleGadget,
+  fuseAfterCook,
+  GADGETS,
+  GADGET_ORDER,
+  makeBelt,
+  restockBelt,
+  selectGadget,
+  spawnToss,
+  splashDamage,
+  stepToss,
+  throwVelocity,
+  WorkLamp,
+  type GadgetId,
+  type Toss,
+} from "./gadgets";
+import {
   canShoot,
   fireInterval,
   makeWeapon,
@@ -113,6 +132,7 @@ interface BotMind {
   stuck: number;
   lastX: number;
   lastZ: number;
+  panic: number;
 }
 
 export class Game {
@@ -145,6 +165,11 @@ export class Game {
   private lastStrafe = 0;
   private adsAudio = false;
   private lockGrace = 0;
+  private belt = makeBelt();
+  private lamp!: WorkLamp;
+  private tosses: Toss[] = [];
+  private readonly gadgetModels = new Map<GadgetId, THREE.Group>();
+  private bounceSfx = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -167,6 +192,13 @@ export class Game {
       this.camera.add(vm);
       this.models.set(id, vm);
     }
+    for (const id of GADGET_ORDER) {
+      const held = createGadgetMesh(id, 1.35);
+      held.visible = false;
+      this.camera.add(held);
+      this.gadgetModels.set(id, held);
+    }
+    this.lamp = new WorkLamp(this.camera);
     this.scene.add(this.camera);
     this.input.attach();
     window.addEventListener("resize", () => this.resize());
@@ -219,6 +251,7 @@ export class Game {
     this.scene.background = new THREE.Color(this.arena.sky);
     this.scene.fog = new THREE.Fog(this.arena.fogColor, this.arena.fogNear, this.arena.fogFar);
     this.renderer.toneMappingExposure = this.arena.exposure;
+    this.lamp.setMap(id);
   }
 
   private startMatch(map: MapId, diff: Difficulty): void {
@@ -232,6 +265,9 @@ export class Game {
     this.sessionSeconds = 0;
     this.phase = "playing";
     this.boardOn = false;
+    this.clearTosses();
+    restockBelt(this.belt);
+    this.lamp.set(false);
     this.ui.hideMenu();
     this.ui.showHud(true);
     this.ui.showTouch(this.input.isTouch());
@@ -254,6 +290,7 @@ export class Game {
         stuck: 0,
         lastX: bot.x,
         lastZ: bot.z,
+        panic: 0,
       };
       this.place(bot);
     }
@@ -263,6 +300,8 @@ export class Game {
   private quitToMenu(): void {
     this.input.exitLock();
     this.phase = "menu";
+    this.clearTosses();
+    this.lamp.set(false);
     this.clearFighters();
     this.ui.showHud(false);
     this.ui.showTouch(false);
@@ -285,6 +324,7 @@ export class Game {
     this.input.exitLock();
     this.cancelCharge(this.player());
     this.sfx.stopCharge();
+    cancelCook(this.belt, true);
     this.ui.showMenu("pause");
   }
 
@@ -296,6 +336,8 @@ export class Game {
   private endMatch(title: string): void {
     this.phase = "results";
     this.input.exitLock();
+    this.clearTosses();
+    this.lamp.set(false);
     this.persist.stats.matches += 1;
     this.persist.stats.seconds += this.sessionSeconds;
     savePersist(this.persist);
@@ -396,6 +438,7 @@ export class Game {
     if (f.player) {
       this.adsLatch = false;
       this.adsAudio = false;
+      restockBelt(this.belt);
     }
     if (f.mesh) {
       f.mesh.visible = true;
@@ -422,6 +465,7 @@ export class Game {
     this.input.beginFrame();
     this.ui.tick(dt);
     this.fx.update(dt);
+    if (this.bounceSfx > 0) this.bounceSfx -= dt;
 
     if (this.phase === "menu") {
       this.orbit += dt;
@@ -444,6 +488,7 @@ export class Game {
         this.ui.setScoreboard(false, this.rows(), this.arena?.title ?? "");
       }
       this.syncViewmodels(false);
+      this.lamp.present(false);
       this.input.endFrame();
       return;
     }
@@ -466,6 +511,7 @@ export class Game {
     const you = this.player();
     if (this.phase === "playing" && you.alive) this.controlPlayer(you, dt);
     else if (this.phase === "deathcam") this.updateDeathcam(dt);
+    if (this.phase === "playing" || this.phase === "deathcam") this.stepTosses(dt);
 
     for (const f of this.fighters) {
       if (f.guard > 0) f.guard -= dt;
@@ -500,6 +546,16 @@ export class Game {
     this.drawMinimap();
     this.ui.compassYaw(you.yaw);
     this.ui.vitals(you.hp, you.weap, you.weap.charge, you.weap.ads);
+    const gDef = GADGETS[this.belt.id];
+    const cook01 = this.belt.cooking ? this.belt.cook / gDef.cookMax : 0;
+    this.ui.gadgets(
+      gDef.name,
+      this.belt.ammo[this.belt.id],
+      cook01,
+      this.lamp.on,
+      this.belt.ammo[this.belt.id] <= 0 && !this.belt.cooking,
+    );
+    this.lamp.present(this.phase === "playing" && you.alive);
     const feel = FEEL[you.weap.id];
     const spreadNow = cone(feel, {
       ads: you.weap.ads,
@@ -524,6 +580,12 @@ export class Game {
     this.ui.hud.dataset.speed = Math.hypot(you.vx, you.vz).toFixed(2);
     this.ui.hud.dataset.ready = you.weap.ready.toFixed(3);
     this.ui.hud.dataset.sprintFade = you.weap.sprintFade.toFixed(3);
+    this.ui.hud.dataset.gadget = this.belt.id;
+    this.ui.hud.dataset.gadgetAmmo = String(this.belt.ammo[this.belt.id]);
+    this.ui.hud.dataset.cook = this.belt.cooking ? "1" : "0";
+    this.ui.hud.dataset.lamp = this.lamp.on ? "1" : "0";
+    this.ui.hud.dataset.gadgetHeld = this.input.gadgetHeld ? "1" : "0";
+    this.ui.hud.dataset.adsBind = "F";
     this.ui.meta(this.timeLeft, you.kills, FRAG_LIMIT);
     this.ui.setScoreboard(this.input.tab || this.boardOn, this.rows(), this.arena!.title);
     this.ui.showHint(this.phase === "playing" && !this.input.locked && !this.input.isTouch());
@@ -534,10 +596,16 @@ export class Game {
     const feel = FEEL[p.weap.id];
     this.updateAdsWant(p);
     this.stepCrouch(p, this.input.crouch);
+    this.handleGadgets(p, dt);
     if (p.adsWant && p.sprinting) {
       this.leaveSprint(p, feel.sprintDelay);
     }
-    const canAds = p.weap.reloading <= 0 && p.weap.swap <= 0 && p.alive && !p.sprinting;
+    const canAds =
+      p.weap.reloading <= 0 &&
+      p.weap.swap <= 0 &&
+      p.alive &&
+      !p.sprinting &&
+      !this.belt.cooking;
     p.weap.ads = stepAds(p.weap.ads, p.adsWant && canAds, feel.adsTime, dt);
     if (p.weap.ads > 0.35 && !this.adsAudio) {
       this.adsAudio = true;
@@ -564,7 +632,11 @@ export class Game {
     if (this.input.reload) this.startReload(p);
 
     const wantSprint =
-      this.input.sprint && !p.crouching && p.weap.ads < 0.2 && !p.adsWant;
+      this.input.sprint &&
+      !p.crouching &&
+      p.weap.ads < 0.2 &&
+      !p.adsWant &&
+      !this.belt.cooking;
     if (p.sprinting && !wantSprint) this.leaveSprint(p, feel.sprintDelay);
     p.sprinting = wantSprint;
     if (p.sprinting) {
@@ -573,7 +645,9 @@ export class Game {
     }
 
     const def = WEAPONS[p.weap.id];
-    if (def.charge) {
+    if (this.belt.cooking) {
+      /* cook owns the hands — guns wait */
+    } else if (def.charge) {
       const chargeOk = p.weap.mag > 0 && p.weap.reloading <= 0 && p.weap.swap <= 0;
       if (this.input.firing && chargeOk) {
         if (p.sprinting) this.leaveSprint(p, feel.sprintDelay);
@@ -671,6 +745,7 @@ export class Game {
     mind.react -= dt;
     mind.nextWander -= dt;
     mind.nextStrafe -= dt;
+    if (mind.panic > 0) mind.panic -= dt;
     if (mind.nextStrafe <= 0) {
       mind.strafe = Math.random() < 0.5 ? -1 : 1;
       mind.nextStrafe = 0.5 + Math.random() * 1.1;
@@ -678,6 +753,17 @@ export class Game {
 
     const target = this.pickTarget(f, mean ? 0.72 : 1);
     const eyeY = f.y + f.eyeH;
+    if (mind.panic > 0) {
+      const spin = this.clock.elapsedTime * (7 + f.id * 0.3);
+      f.vx = Math.cos(spin) * speed;
+      f.vz = Math.sin(spin) * speed;
+      mind.ads = false;
+      f.adsWant = false;
+      f.weap.ads = stepAds(f.weap.ads, false, FEEL[f.weap.id].adsTime, dt);
+      if (f.weap.charging) this.cancelCharge(f);
+      if (f.grounded && Math.random() < dt * 2.4) f.vy = JUMP_V * 0.7;
+      return;
+    }
     if (target) {
       const dx = target.x - f.x;
       const dy = target.y + (target.crouching ? 0.72 : 1.42) - eyeY;
@@ -1031,8 +1117,9 @@ export class Game {
     return best;
   }
 
-  private hurt(target: Fighter, dmg: number, src: Fighter): void {
-    if (!target.alive || target.guard > 0) return;
+  private hurt(target: Fighter, dmg: number, src: Fighter, verb?: string): void {
+    if (!target.alive) return;
+    if (target.guard > 0 && !verb) return;
     target.hp -= dmg;
     target.lastAttacker = src.id;
     if (target.mesh) {
@@ -1043,10 +1130,10 @@ export class Game {
       this.ui.hurtFlash();
       this.sfx.hurt();
     }
-    if (target.hp <= 0) this.kill(target, src.id, false);
+    if (target.hp <= 0) this.kill(target, src.id, false, verb);
   }
 
-  private kill(target: Fighter, killerId: number, voided: boolean): void {
+  private kill(target: Fighter, killerId: number, voided: boolean, verbOverride?: string): void {
     if (!target.alive) return;
     target.alive = false;
     target.hp = 0;
@@ -1058,16 +1145,19 @@ export class Game {
     const killer = this.fighters.find((f) => f.id === killerId) ?? target;
     if (killer.id !== target.id) killer.kills += 1;
     const def = WEAPONS[killer.weap.id];
-    const verb = voided && killer.id === target.id ? "spilled" : def.verb;
-    const kName = killer.id === target.id ? "the drop" : killer.name;
+    const verb =
+      verbOverride ?? (voided && killer.id === target.id ? "spilled" : def.verb);
+    const kName =
+      killer.id === target.id ? (verbOverride ? "a tin" : "the drop") : killer.name;
     this.ui.pushFeed(`<em>${esc(kName)}</em> ${verb} <em>${esc(target.name)}</em>`);
     if (killer.player && killer.id !== target.id) {
       this.sfx.kill();
-      this.ui.banner(`${def.verb.toUpperCase()} ${target.name.toUpperCase()}`);
+      this.ui.banner(`${verb.toUpperCase()} ${target.name.toUpperCase()}`);
       this.persist.stats.kills += 1;
       savePersist(this.persist);
     }
     if (target.player) {
+      cancelCook(this.belt, false);
       this.sfx.death();
       this.persist.stats.deaths += 1;
       savePersist(this.persist);
@@ -1123,10 +1213,133 @@ export class Game {
     );
   }
 
+  private handleGadgets(p: Fighter, dt: number): void {
+    if (this.input.lampPressed) {
+      const on = this.lamp.toggle();
+      this.sfx.lamp(on);
+    }
+    if (this.input.gadgetSlot !== null) {
+      const id = GADGET_ORDER[this.input.gadgetSlot];
+      if (id) selectGadget(this.belt, id);
+    }
+    if (this.input.gadgetCycle) cycleGadget(this.belt, this.input.gadgetCycle);
+
+    const def = GADGETS[this.belt.id];
+    if (!this.belt.cooking && this.input.gadgetPressed) {
+      if (beginCook(this.belt)) {
+        this.cancelCharge(p);
+        p.adsWant = false;
+        if (p.player) this.adsLatch = false;
+        if (p.sprinting) this.leaveSprint(p, FEEL[p.weap.id].sprintDelay);
+        this.sfx.cook();
+      } else {
+        this.sfx.dry();
+      }
+    }
+    if (!this.belt.cooking) return;
+    if (p.sprinting) this.leaveSprint(p, FEEL[p.weap.id].sprintDelay);
+    this.cancelCharge(p);
+    p.adsWant = false;
+    if (p.player) this.adsLatch = false;
+    this.belt.cook += dt;
+    if (this.belt.cook >= def.cookMax) {
+      this.belt.cooking = false;
+      this.belt.cook = 0;
+      this.popAt(p.x, p.y + p.eyeH * 0.55, p.z, def.id, p.id);
+      return;
+    }
+    if (this.input.gadgetReleased) this.releaseToss(p);
+  }
+
+  private releaseToss(p: Fighter): void {
+    if (!this.belt.cooking) return;
+    const def = GADGETS[this.belt.id];
+    const cooked = this.belt.cook;
+    this.belt.cooking = false;
+    this.belt.cook = 0;
+    const eye = this.eye(p);
+    const dir = this.look(p.yaw, p.pitch);
+    const vel = throwVelocity(dir.x, dir.y, dir.z, def, p.vx, p.vy, p.vz);
+    const toss = spawnToss(
+      p.id,
+      def.id,
+      eye.x + dir.x * 0.55,
+      eye.y + dir.y * 0.55 - 0.08,
+      eye.z + dir.z * 0.55,
+      vel.vx,
+      vel.vy,
+      vel.vz,
+      fuseAfterCook(def, cooked),
+    );
+    this.scene.add(toss.mesh);
+    this.tosses.push(toss);
+    this.sfx.toss();
+  }
+
+  private stepTosses(dt: number): void {
+    const bodies = this.fighters
+      .filter((f) => f.alive)
+      .map((f) => ({ id: f.id, x: f.x, y: f.y, z: f.z, h: bodyHeight(f) }));
+    for (let i = this.tosses.length - 1; i >= 0; i--) {
+      const toss = this.tosses[i]!;
+      const ev = stepToss(toss, dt, this.arena!.colliders, this.arena!.killY, bodies);
+      if (ev.bounced && this.bounceSfx <= 0) {
+        this.sfx.bounce();
+        this.bounceSfx = 0.08;
+      }
+      if (ev.stuckNow) this.sfx.stick();
+      if (ev.popped) {
+        if (!ev.voided) this.popAt(toss.x, toss.y, toss.z, toss.kind, toss.ownerId);
+        this.scene.remove(toss.mesh);
+        this.tosses.splice(i, 1);
+      }
+    }
+  }
+
+  private popAt(x: number, y: number, z: number, kind: GadgetId, ownerId: number): void {
+    const def = GADGETS[kind];
+    const src = this.fighters.find((f) => f.id === ownerId);
+    this.fx.blast(x, y, z, kind);
+    this.sfx.pop(kind);
+    if (!src) return;
+    for (const f of this.fighters) {
+      if (!f.alive) continue;
+      const chestY = f.y + bodyHeight(f) * 0.55;
+      const dmg = splashDamage(x, y, z, def, f.x, chestY, f.z, f.id === ownerId);
+      if (dmg <= 0) continue;
+      this.hurt(f, dmg, src, def.verb);
+      if (f.bot && f.alive) {
+        f.bot.panic = Math.max(f.bot.panic, kind === "wasp" ? 1.7 : 0.7);
+        f.bot.react = Math.max(f.bot.react, 0.45);
+      }
+    }
+  }
+
+  private clearTosses(): void {
+    for (const t of this.tosses) this.scene.remove(t.mesh);
+    this.tosses = [];
+    cancelCook(this.belt, false);
+    for (const [, g] of this.gadgetModels) g.visible = false;
+  }
+
   private syncViewmodels(show: boolean): void {
     const you = this.fighters.find((f) => f.player);
+    const cooking = Boolean(show && you && this.belt.cooking);
+    for (const [id, g] of this.gadgetModels) {
+      g.visible = cooking && id === this.belt.id;
+      if (!g.visible || !you) continue;
+      const t = this.clock.elapsedTime;
+      const cook = this.belt.cook;
+      const shake = cook * 0.028;
+      g.position.set(
+        0.22 + Math.sin(t * (14 + cook * 10)) * shake,
+        -0.26 + Math.cos(t * 11) * shake,
+        -0.4,
+      );
+      g.rotation.set(-0.35 + cook * 0.2, 0.35, 0.18 + Math.sin(t * 9) * shake);
+    }
     for (const [id, g] of this.models) {
-      g.visible = Boolean(show && you && you.weap.id === id);
+      g.visible = Boolean(show && you && you.weap.id === id && !cooking);
       if (!you || !g.visible) continue;
       const feel = FEEL[id];
       const pose = poseLerp(feel, you.weap.ads);

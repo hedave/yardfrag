@@ -31,6 +31,8 @@ export class Fx {
   private readonly warmMat = new THREE.MeshBasicMaterial({ color: 0xffc07a });
   private readonly fleshMat = new THREE.MeshBasicMaterial({ color: 0xf5ff3d });
   private readonly headMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  private readonly mulchMat = new THREE.MeshBasicMaterial({ color: 0xb85a22 });
+  private readonly waspMat = new THREE.MeshBasicMaterial({ color: 0xf0c44a });
 
   constructor(private scene: THREE.Scene) {
     this.muzzle = new THREE.PointLight(0xffc07a, 0, 9, 2);
@@ -77,6 +79,30 @@ export class Fx {
         0.05,
       );
     }
+  }
+
+  blast(x: number, y: number, z: number, kind: "mulch" | "wasp"): void {
+    const n = kind === "mulch" ? 16 : 20;
+    const mat = kind === "mulch" ? this.mulchMat : this.waspMat;
+    const geo = kind === "mulch" ? this.dustGeo : this.fleshGeo;
+    for (let i = 0; i < n; i++) {
+      const kick = kind === "mulch" ? 5.2 + Math.random() * 3.4 : 2.4 + Math.random() * 2.8;
+      this.spawn(
+        x,
+        y,
+        z,
+        (Math.random() - 0.5) * kick,
+        1.2 + Math.random() * kick * 0.55,
+        (Math.random() - 0.5) * kick,
+        geo,
+        i === 0 ? this.warmMat : mat,
+        kind === "mulch" ? 0.32 : 0.42,
+        kind === "mulch" ? 0.08 : 0.045,
+      );
+    }
+    this.muzzle.position.set(x, y, z);
+    this.muzzle.intensity = kind === "mulch" ? 12 : 7;
+    this.muzzleAge = 0.11;
   }
 
   tracer(

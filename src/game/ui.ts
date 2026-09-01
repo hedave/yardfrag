@@ -240,6 +240,26 @@ export class UI {
       `${Math.round(charging * 100)}%`;
   }
 
+  gadgets(
+    name: string,
+    ammo: number,
+    cooking: number,
+    lamp: boolean,
+    dry: boolean,
+  ): void {
+    document.getElementById("gadget-name")!.textContent = name;
+    document.getElementById("gadget-ammo")!.textContent = String(ammo);
+    const ammoEl = document.getElementById("vital-ammo");
+    ammoEl?.classList.toggle("gadget-dry", dry);
+    ammoEl?.classList.toggle("cooking", cooking > 0);
+    const cook = document.getElementById("cook-wrap")!;
+    cook.classList.toggle("hidden", cooking <= 0);
+    cook.classList.toggle("hot", cooking > 0.78);
+    (document.getElementById("cook-fill") as HTMLElement).style.width =
+      `${Math.round(Math.max(0, Math.min(1, cooking)) * 100)}%`;
+    document.getElementById("lamp-chip")?.classList.toggle("on", lamp);
+  }
+
   meta(timeLeft: number, frags: number, limit: number): void {
     const m = Math.floor(timeLeft / 60);
     const s = Math.floor(timeLeft % 60);

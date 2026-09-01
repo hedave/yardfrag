@@ -14,6 +14,12 @@ export class Input {
   reload = false;
   weap: number | null = null;
   cycle = 0;
+  gadgetHeld = false;
+  gadgetPressed = false;
+  gadgetReleased = false;
+  gadgetSlot: number | null = null;
+  gadgetCycle = 0;
+  lampPressed = false;
   lookDx = 0;
   lookDy = 0;
   tab = false;
@@ -26,6 +32,7 @@ export class Input {
   private keys = new Set<string>();
   private adsMouse = false;
   private adsKey = false;
+  private gadgetMouse = false;
   private lookTouch: number | null = null;
   private lookLastX = 0;
   private lookLastY = 0;
@@ -53,6 +60,9 @@ export class Input {
       if (down && e.code === "Digit1") this.weap = 0;
       if (down && e.code === "Digit2") this.weap = 1;
       if (down && e.code === "Digit3") this.weap = 2;
+      if (down && e.code === "Digit4") this.gadgetSlot = 0;
+      if (down && e.code === "Digit5") this.gadgetSlot = 1;
+      if (down && e.code === "KeyQ") this.gadgetCycle = 1;
       if (down && e.code === "KeyR") this.reload = true;
       if (down && (e.code === "Tab" || e.code === "KeyB")) this.tabToggle = true;
       if (e.code === "KeyF") {
@@ -60,6 +70,11 @@ export class Input {
         if (down) this.adsPressed = true;
         else this.adsReleased = true;
       }
+      if (e.code === "KeyG") {
+        if (down) this.gadgetPressed = true;
+        else this.gadgetReleased = true;
+      }
+      if (down && (e.code === "KeyL" || e.code === "KeyV")) this.lampPressed = true;
     };
     const kd = (e: KeyboardEvent) => onKey(e, true);
     const ku = (e: KeyboardEvent) => onKey(e, false);
@@ -84,6 +99,15 @@ export class Input {
         this.adsMouse = true;
         this.adsPressed = true;
       }
+      if (e.button === 3) {
+        e.preventDefault();
+        this.lampPressed = true;
+      }
+      if (e.button === 4) {
+        e.preventDefault();
+        this.gadgetMouse = true;
+        this.gadgetPressed = true;
+      }
     };
     const mu = (e: MouseEvent) => {
       if (e.button === 0) {
@@ -94,6 +118,10 @@ export class Input {
         this.adsMouse = false;
         this.adsReleased = true;
       }
+      if (e.button === 4) {
+        this.gadgetMouse = false;
+        this.gadgetReleased = true;
+      }
     };
     const ctx = (e: Event) => {
       e.preventDefault();
@@ -102,14 +130,19 @@ export class Input {
       if (!this.locked && !this.lockDenied) return;
       this.cycle += e.deltaY > 0 ? 1 : -1;
     };
+    const aux = (e: MouseEvent) => {
+      if (e.button === 3 || e.button === 4) e.preventDefault();
+    };
     document.addEventListener("mousemove", mm);
     document.addEventListener("mousedown", md);
     document.addEventListener("mouseup", mu);
+    document.addEventListener("auxclick", aux);
     document.addEventListener("contextmenu", ctx);
     document.addEventListener("wheel", wheel, { passive: true });
     this.unbind.push(() => document.removeEventListener("mousemove", mm));
     this.unbind.push(() => document.removeEventListener("mousedown", md));
     this.unbind.push(() => document.removeEventListener("mouseup", mu));
+    this.unbind.push(() => document.removeEventListener("auxclick", aux));
     this.unbind.push(() => document.removeEventListener("contextmenu", ctx));
     this.unbind.push(() => document.removeEventListener("wheel", wheel));
 
@@ -169,6 +202,7 @@ export class Input {
     this.crouch = this.keys.has("ControlLeft") || this.keys.has("ControlRight");
     this.tab = this.keys.has("Tab") || this.keys.has("KeyB");
     this.adsHeld = this.adsMouse || this.adsKey;
+    this.gadgetHeld = this.keys.has("KeyG") || this.gadgetMouse;
     if (this.fireTouch) this.firing = true;
   }
 
@@ -182,6 +216,11 @@ export class Input {
     this.reload = false;
     this.weap = null;
     this.cycle = 0;
+    this.gadgetPressed = false;
+    this.gadgetReleased = false;
+    this.gadgetSlot = null;
+    this.gadgetCycle = 0;
+    this.lampPressed = false;
     this.pause = false;
     this.lockLost = false;
     this.tabToggle = false;
@@ -197,6 +236,8 @@ export class Input {
     const sprint = this.touchRoot.querySelector("#btn-sprint") as HTMLElement;
     const crouch = this.touchRoot.querySelector("#btn-crouch") as HTMLElement | null;
     const reload = this.touchRoot.querySelector("#btn-reload") as HTMLElement;
+    const toss = this.touchRoot.querySelector("#btn-toss") as HTMLElement | null;
+    const lamp = this.touchRoot.querySelector("#btn-lamp") as HTMLElement | null;
     const pause = this.touchRoot.querySelector("#btn-pause") as HTMLElement;
     const stick = this.touchRoot.querySelector("#joy-stick") as HTMLElement;
 
@@ -304,6 +345,24 @@ export class Input {
     hold(reload, () => {
       this.reload = true;
     });
+    if (toss) {
+      hold(
+        toss,
+        () => {
+          this.gadgetMouse = true;
+          this.gadgetPressed = true;
+        },
+        () => {
+          this.gadgetMouse = false;
+          this.gadgetReleased = true;
+        },
+      );
+    }
+    if (lamp) {
+      hold(lamp, () => {
+        this.lampPressed = true;
+      });
+    }
     hold(pause, () => {
       this.pause = true;
     });
@@ -355,11 +414,17 @@ const GAME_KEYS = new Set([
   "KeyS",
   "KeyD",
   "KeyF",
+  "KeyG",
+  "KeyL",
+  "KeyV",
+  "KeyQ",
   "KeyR",
   "KeyB",
   "Digit1",
   "Digit2",
   "Digit3",
+  "Digit4",
+  "Digit5",
 ]);
 
 function clamp(n: number, a: number, b: number): number {
