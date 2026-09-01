@@ -85,7 +85,7 @@ export class Input {
     this.unbind.push(() => window.removeEventListener("keyup", ku));
 
     const mm = (e: MouseEvent) => {
-      if (this.locked || (this.lockDenied && (this.firing || this.adsMouse))) {
+      if (this.locked || (this.lockDenied && (this.firing || this.adsMouse || this.adsKey))) {
         this.lookDx += e.movementX;
         this.lookDy += e.movementY;
       }
@@ -200,7 +200,10 @@ export class Input {
     this.jumpPressed = jumping && !this.jump;
     this.jump = jumping;
     this.sprint = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
-    this.crouch = this.keys.has("ControlLeft") || this.keys.has("ControlRight");
+    this.crouch =
+      this.keys.has("ControlLeft") ||
+      this.keys.has("ControlRight") ||
+      this.keys.has("KeyC");
     this.tab = this.keys.has("Tab") || this.keys.has("KeyB");
     this.adsHeld = this.adsMouse || this.adsKey;
     this.gadgetHeld = this.keys.has("KeyG") || this.gadgetMouse;
@@ -421,6 +424,7 @@ const GAME_KEYS = new Set([
   "KeyQ",
   "KeyR",
   "KeyB",
+  "KeyC",
   "Digit1",
   "Digit2",
   "Digit3",
