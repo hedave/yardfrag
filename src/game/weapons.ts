@@ -106,5 +106,5 @@ export function fireInterval(id: WeaponId): number {
 }
 
 export function canShoot(w: WeaponState): boolean {
-  return w.reloading <= 0 && w.cooldown <= 0 && w.swap <= 0 && w.ready <= 0 && w.mag > 0;
+  return w.reloading <= 0 && w.cooldown <= 0 && w.swap <= 0 && w.mag > 0;
 }

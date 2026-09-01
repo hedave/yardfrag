@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { WeaponId } from "./types";
 
 interface Spark {
   mesh: THREE.Mesh;
@@ -25,6 +26,9 @@ export class Fx {
   private tracers: Tracer[] = [];
   private muzzle: THREE.PointLight;
   private muzzleAge = 0;
+  private muzzleLife = 0.048;
+  private muzzlePeak = 0;
+  private flickerLeft = 0;
   private readonly dustGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
   private readonly fleshGeo = new THREE.SphereGeometry(0.04, 5, 5);
   private readonly dustMat = new THREE.MeshBasicMaterial({ color: 0xc45c28 });
@@ -39,10 +43,33 @@ export class Fx {
     scene.add(this.muzzle);
   }
 
-  flash(x: number, y: number, z: number): void {
+  flash(id: WeaponId, x: number, y: number, z: number): void {
     this.muzzle.position.set(x, y, z);
-    this.muzzle.intensity = 6.4;
-    this.muzzleAge = 0.048;
+    if (id === "clipper") {
+      this.muzzle.color.setHex(0xffe08a);
+      this.muzzle.intensity = 4.6;
+      this.muzzle.distance = 6.4;
+      this.muzzlePeak = 4.6;
+      this.muzzleLife = 0.02;
+      this.muzzleAge = 0.02;
+      this.flickerLeft = 1;
+    } else if (id === "hose") {
+      this.muzzle.color.setHex(0xffa050);
+      this.muzzle.intensity = 11.2;
+      this.muzzle.distance = 16;
+      this.muzzlePeak = 11.2;
+      this.muzzleLife = 0.1;
+      this.muzzleAge = 0.1;
+      this.flickerLeft = 0;
+    } else {
+      this.muzzle.color.setHex(0xfff4d8);
+      this.muzzle.intensity = 16.5;
+      this.muzzle.distance = 12;
+      this.muzzlePeak = 16.5;
+      this.muzzleLife = 0.022;
+      this.muzzleAge = 0.022;
+      this.flickerLeft = 0;
+    }
   }
 
   flesh(x: number, y: number, z: number, head: boolean): void {
@@ -130,7 +157,14 @@ export class Fx {
   update(dt: number): void {
     if (this.muzzleAge > 0) {
       this.muzzleAge -= dt;
-      this.muzzle.intensity = Math.max(0, (this.muzzleAge / 0.048) * 6.4);
+      this.muzzle.intensity = Math.max(0, (this.muzzleAge / this.muzzleLife) * this.muzzlePeak);
+      if (this.muzzleAge <= 0 && this.flickerLeft > 0) {
+        this.flickerLeft -= 1;
+        this.muzzlePeak = 3.1;
+        this.muzzleLife = 0.016;
+        this.muzzleAge = 0.016;
+        this.muzzle.intensity = this.muzzlePeak;
+      }
     }
     for (let i = this.sparks.length - 1; i >= 0; i--) {
       const s = this.sparks[i]!;

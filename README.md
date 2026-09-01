@@ -34,15 +34,15 @@ npm run preview
 - **Scoreboard** Tab · **Pause** Esc
 - First to 20 frags or 6 minutes. Five yardling bots, free-for-all.
 
-Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, open crosshair). Hold RMB to raise the tool onto its yard-iron — a short smoothed motion, not a snap — plant the look, and tighten the cone. Recoil kicks the shot and the look; first shot is honest, follow-ups climb, recovery is something you pull against. Jump, land, and sprint leftover open the cone. Sprint has weight on the start and stop; it blocks full-accuracy fire until the existing ready delay burns off. Sight cancels sprint. Crouch drops the capsule and eye, slows the step, and can stack with sight. Reload and swap drop you out of sight.
+Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, open crosshair). Hold RMB or F to raise the tool onto its sight — a short smoothed motion, not a snap — plant the look, and tighten the cone. Recoil is per tool: Clipper climbs a string, Scatterhose thumps each pump, Stake is one pitch that hangs. Punch is the viewmodel only. Jump, land, and sprint leftover open the cone. Coming off Shift still fires — leftover is a wide cone, not a dead trigger. Sight cancels sprint. Crouch drops the capsule and eye, slows the step, and can stack with sight. Reload and swap drop you out of sight.
 
 ### Weapons
 
 | Tool | Feel |
 | --- | --- |
-| **Clipper** | Hitscan hedge shears. Hip sprays; sight is a planted tap gun. Recoil climbs a string. |
-| **Scatterhose** | Seed-pellet shotgun. Hip is a wide hose; sight is still a hose, just denser. Big shove. |
-| **Stake** | Trellis needle. LMB hold charges, RMB sights. Charge is not the zoom. Heavy single kick. |
+| **Clipper** | Hitscan carbine. Hip sprays; sight plants a front post at the muzzle. Recoil climbs a string. |
+| **Scatterhose** | Pump shotgun. Hip is a wide cone; sight is still a hose, just denser, down a bead. Big thump. |
+| **Stake** | Long gun. LMB hold charges, RMB or F sights through the optic. Charge is not the zoom. One hanging pitch. |
 
 Two tins per life each. Hold **G** to cook; a full cook pops in your hands.
 

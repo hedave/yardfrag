@@ -85,6 +85,7 @@ const ACCEL_CROUCH = 11;
 const STOP_WALK = 10;
 const STOP_SPRINT = 6.4;
 const AIR_ACCEL = 10;
+const FLASH_POS = new THREE.Vector3();
 
 interface Fighter {
   id: number;
@@ -574,12 +575,17 @@ export class Game {
     this.ui.hud.dataset.fov = this.camera.fov.toFixed(1);
     this.ui.hud.dataset.spread = spreadNow.toFixed(4);
     this.ui.hud.dataset.weap = you.weap.id;
+    this.ui.hud.dataset.shape = feel.shape;
+    this.ui.hud.dataset.mag = String(you.weap.mag);
     this.ui.hud.dataset.crouch = you.crouching ? "1" : "0";
     this.ui.hud.dataset.sprint = you.sprinting ? "1" : "0";
     this.ui.hud.dataset.eye = you.eyeH.toFixed(2);
     this.ui.hud.dataset.body = bodyHeight(you).toFixed(2);
     this.ui.hud.dataset.speed = Math.hypot(you.vx, you.vz).toFixed(2);
+    this.ui.hud.dataset.kick = you.recoil.kickP.toFixed(3);
+    this.ui.hud.dataset.charge = you.weap.charge.toFixed(2);
     this.ui.hud.dataset.ready = you.weap.ready.toFixed(3);
+    this.ui.hud.dataset.fade = you.weap.sprintFade.toFixed(2);
     this.ui.hud.dataset.sprintFade = you.weap.sprintFade.toFixed(3);
     this.ui.hud.dataset.gadget = this.belt.id;
     this.ui.hud.dataset.gadgetAmmo = String(this.belt.ammo[this.belt.id]);
@@ -599,9 +605,7 @@ export class Game {
     this.updateAdsWant(p);
     this.stepCrouch(p, this.input.crouch);
     this.handleGadgets(p, dt);
-    if (p.adsWant && p.sprinting) {
-      this.leaveSprint(p, feel.sprintDelay);
-    }
+    if (p.adsWant && p.sprinting) this.leaveSprint(p);
     const canAds =
       p.weap.reloading <= 0 &&
       p.weap.swap <= 0 &&
@@ -638,13 +642,11 @@ export class Game {
       !p.crouching &&
       p.weap.ads < 0.2 &&
       !p.adsWant &&
-      !this.belt.cooking;
-    if (p.sprinting && !wantSprint) this.leaveSprint(p, feel.sprintDelay);
+      !this.belt.cooking &&
+      !this.input.firing;
+    if (p.sprinting && !wantSprint) this.leaveSprint(p);
     p.sprinting = wantSprint;
-    if (p.sprinting) {
-      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
-      p.weap.sprintFade = 1;
-    }
+    if (p.sprinting) p.weap.sprintFade = 1;
 
     const def = WEAPONS[p.weap.id];
     if (this.belt.cooking) {
@@ -652,15 +654,13 @@ export class Game {
     } else if (def.charge) {
       const chargeOk = p.weap.mag > 0 && p.weap.reloading <= 0 && p.weap.swap <= 0;
       if (this.input.firing && chargeOk) {
-        if (p.sprinting) this.leaveSprint(p, feel.sprintDelay);
-        if (p.weap.ready <= 0) {
-          if (!p.weap.charging) {
-            p.weap.charging = true;
-            this.sfx.startCharge();
-            this.chargedSfx = true;
-          }
-          p.weap.charge = Math.min(1, p.weap.charge + dt / def.chargeTime);
+        if (p.sprinting) this.leaveSprint(p);
+        if (!p.weap.charging) {
+          p.weap.charging = true;
+          this.sfx.startCharge();
+          this.chargedSfx = true;
         }
+        p.weap.charge = Math.min(1, p.weap.charge + dt / def.chargeTime);
       }
       if (this.input.fireReleased && p.weap.charging) this.releaseStake(p);
     } else if (def.auto) {
@@ -709,7 +709,7 @@ export class Game {
 
   private stepCrouch(p: Fighter, want: boolean): void {
     if (want) {
-      if (!p.crouching && p.sprinting) this.leaveSprint(p, FEEL[p.weap.id].sprintDelay);
+      if (!p.crouching && p.sprinting) this.leaveSprint(p);
       p.crouching = true;
       return;
     }
@@ -721,9 +721,8 @@ export class Game {
     }
   }
 
-  private leaveSprint(p: Fighter, delay: number): void {
+  private leaveSprint(p: Fighter): void {
     p.sprinting = false;
-    p.weap.ready = Math.max(p.weap.ready, delay);
     p.weap.sprintFade = 1;
   }
 
@@ -917,7 +916,7 @@ export class Game {
     const feel = FEEL[f.weap.id];
     if (f.weap.cooldown > 0) f.weap.cooldown -= dt;
     if (f.weap.ready > 0) f.weap.ready -= dt;
-    if (f.sprinting || f.weap.ready > 0) f.weap.sprintFade = 1;
+    if (f.sprinting) f.weap.sprintFade = 1;
     else f.weap.sprintFade = damp(f.weap.sprintFade, 0, feel.sprintFadeRate, dt);
     f.weap.bloom = damp(f.weap.bloom, 0, feel.bloomDecay, dt);
     if (f.weap.reloading > 0) {
@@ -988,7 +987,6 @@ export class Game {
       this.chargedSfx = false;
     }
     if (f.weap.mag <= 0 || f.weap.reloading > 0 || f.weap.swap > 0) return;
-    if (f.weap.ready > 0) return;
     const def = WEAPONS.stake;
     f.weap.mag -= 1;
     f.weap.cooldown = fireInterval("stake");
@@ -999,13 +997,8 @@ export class Game {
 
   private tryFire(f: Fighter): void {
     const def = WEAPONS[f.weap.id];
-    const feel = FEEL[f.weap.id];
     if (f.weap.reloading > 0 || f.weap.cooldown > 0 || f.weap.swap > 0) return;
-    if (f.sprinting || f.weap.ready > 0) {
-      if (f.sprinting) this.leaveSprint(f, feel.sprintDelay);
-      else f.weap.sprintFade = 1;
-      return;
-    }
+    if (f.sprinting) this.leaveSprint(f);
     if (f.weap.mag <= 0) {
       this.startReload(f);
       return;
@@ -1044,8 +1037,15 @@ export class Game {
     if (src.player) {
       this.sfx.fire(src.weap.id);
       this.ui.muzzleHud();
-      const muzzle = new THREE.Vector3(0.12, -0.08, -0.55).applyMatrix4(this.camera.matrixWorld);
-      this.fx.flash(muzzle.x, muzzle.y, muzzle.z);
+      const vm = this.models.get(src.weap.id);
+      const tip = vm?.getObjectByName("muzzle");
+      if (tip) {
+        tip.updateWorldMatrix(true, false);
+        tip.getWorldPosition(FLASH_POS);
+      } else {
+        FLASH_POS.set(0.12, -0.08, -0.55).applyMatrix4(this.camera.matrixWorld);
+      }
+      this.fx.flash(src.weap.id, FLASH_POS.x, FLASH_POS.y, FLASH_POS.z);
     }
     let any = false;
     let head = false;
@@ -1206,10 +1206,10 @@ export class Game {
     this.camera.updateProjectionMatrix();
     this.camera.position.set(p.x, p.y + p.eyeH, p.z);
     const plant = adsWeight(p.weap.ads);
-    const roll = -this.lastStrafe * 0.038 * (1 - plant * 0.88) + p.recoil.punchY * 0.42;
+    const roll = -this.lastStrafe * 0.038 * (1 - plant * 0.88);
     this.camera.rotation.set(
-      p.pitch + p.recoil.kickP + p.recoil.punchP,
-      p.yaw + p.recoil.kickY + p.recoil.punchY,
+      p.pitch + p.recoil.kickP,
+      p.yaw + p.recoil.kickY,
       roll,
       "YXZ",
     );
@@ -1232,14 +1232,14 @@ export class Game {
         this.cancelCharge(p);
         p.adsWant = false;
         if (p.player) this.adsLatch = false;
-        if (p.sprinting) this.leaveSprint(p, FEEL[p.weap.id].sprintDelay);
+        if (p.sprinting) this.leaveSprint(p);
         this.sfx.cook();
       } else {
         this.sfx.dry();
       }
     }
     if (!this.belt.cooking) return;
-    if (p.sprinting) this.leaveSprint(p, FEEL[p.weap.id].sprintDelay);
+    if (p.sprinting) this.leaveSprint(p);
     this.cancelCharge(p);
     p.adsWant = false;
     if (p.player) this.adsLatch = false;
@@ -1372,6 +1372,8 @@ export class Game {
         pose.ry + you.recoil.punchY * 0.45,
         pose.rz + (1 - plant) * this.lastStrafe * 0.04,
       );
+      const arms = g.getObjectByName("fpArms");
+      if (arms) arms.visible = plant < 0.62;
     }
   }
 
@@ -1455,6 +1457,7 @@ function normAngle(a: number): number {
   return a;
 }
 
+/** Uniform disc in the plane perpendicular to aim — a cone, not a cube. */
 function spreadDir(
   x: number,
   y: number,
@@ -1462,9 +1465,25 @@ function spreadDir(
   spread: number,
 ): { x: number; y: number; z: number } {
   if (spread <= 0) return { x, y, z };
-  const nx = x + (Math.random() * 2 - 1) * spread;
-  const ny = y + (Math.random() * 2 - 1) * spread;
-  const nz = z + (Math.random() * 2 - 1) * spread;
+  const r = Math.sqrt(Math.random()) * spread;
+  const a = Math.random() * Math.PI * 2;
+  const hx = Math.abs(y) < 0.9 ? 0 : 1;
+  const hy = Math.abs(y) < 0.9 ? 1 : 0;
+  let rx = y * 0 - z * hy;
+  let ry = z * hx - x * 0;
+  let rz = x * hy - y * hx;
+  const rl = Math.hypot(rx, ry, rz) || 1;
+  rx /= rl;
+  ry /= rl;
+  rz /= rl;
+  const ux = y * rz - z * ry;
+  const uy = z * rx - x * rz;
+  const uz = x * ry - y * rx;
+  const ca = Math.cos(a) * r;
+  const sa = Math.sin(a) * r;
+  const nx = x + rx * ca + ux * sa;
+  const ny = y + ry * ca + uy * sa;
+  const nz = z + rz * ca + uz * sa;
   const len = Math.hypot(nx, ny, nz) || 1;
   return { x: nx / len, y: ny / len, z: nz / len };
 }
