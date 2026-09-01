@@ -32,7 +32,7 @@ npm run preview
 - **Scoreboard** Tab · **Pause** Esc
 - First to 20 frags or 6 minutes. Five yardling bots, free-for-all.
 
-Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, open crosshair). Hold RMB to raise the tool onto its yard-iron — a short smoothed motion, not a snap — plant the look, and tighten the cone. Recoil kicks the shot and the look; first shot is honest, follow-ups climb, recovery is something you pull against. Jump, land, and sprint leftover open the cone. Sprint blocks full-accuracy fire; reload and swap drop you out of sight.
+Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, open crosshair). Hold RMB or F to raise the tool onto its yard-iron — a short smoothed motion, not a snap — plant the look, and tighten the cone. Recoil is per tool: Clipper climbs a string, Scatterhose thumps each pump, Stake is one pitch that hangs. Punch is the viewmodel only. Jump, land, and sprint leftover open the cone. Coming off Shift still fires — leftover is a wide cone, not a dead trigger. Reload and swap drop you out of sight.
 
 ### Weapons
 

@@ -39,18 +39,18 @@ export class Sfx {
     const ctx = this.ensure();
     const t = ctx.currentTime;
     if (id === "clipper") {
-      this.burst(this.white, t, 0.05, 2400, 780, 0.28, 1.1);
-      this.tone(t, 340, 160, 0.04, "square", 0.055);
-      this.tone(t, 1680, 820, 0.03, "sine", 0.03);
+      this.burst(this.white, t, 0.036, 2700, 920, 0.24, 1.25);
+      this.tone(t, 400, 180, 0.028, "square", 0.048);
+      this.tone(t, 1960, 980, 0.02, "sine", 0.026);
     } else if (id === "hose") {
-      this.burst(this.white, t, 0.13, 780, 140, 0.34, 0.7);
-      this.burst(this.dirt, t, 0.1, 420, 90, 0.2, 0.5);
-      this.tone(t, 72, 38, 0.1, "sine", 0.14);
-      this.tone(t, 210, 70, 0.07, "triangle", 0.05);
+      this.burst(this.white, t, 0.16, 560, 80, 0.42, 0.5);
+      this.burst(this.dirt, t, 0.14, 260, 55, 0.3, 0.38);
+      this.tone(t, 54, 28, 0.15, "sine", 0.2);
+      this.tone(t, 160, 48, 0.1, "triangle", 0.07);
     } else {
-      this.burst(this.white, t, 0.09, 2800, 360, 0.3, 0.9);
-      this.tone(t, 150, 62, 0.1, "triangle", 0.12);
-      this.tone(t, 1240, 740, 0.07, "sine", 0.045);
+      this.burst(this.white, t, 0.048, 3400, 220, 0.4, 0.8);
+      this.tone(t, 170, 42, 0.07, "triangle", 0.15);
+      this.tone(t, 1560, 320, 0.04, "sine", 0.06);
     }
   }
 

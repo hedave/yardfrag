@@ -9,10 +9,16 @@ import type { WeaponId } from "./types";
  *   and slows look more than the zoom alone.
  * - Recoil is a kick you fight: it moves the shot and the look, then
  *   eases home. Punch is a short viewmodel snap that dies on its own.
- * - First shot is honest. Follow-ups climb. No canned spray tape.
+ * - Three tools, three shapes: Clipper climbs a string, Scatterhose
+ *   thumps each pump, Stake is one pitch that hangs. No spray tape.
  * - Jump, land, and sprint leftover are a tax you feel in the cone.
+ *   Coming off sprint still fires; leftover is the wide cone, not a
+ *   dead trigger.
  */
+export type RecoilShape = "climb" | "thump" | "kick";
+
 export interface GunTune {
+  shape: RecoilShape;
   hipSpread: number;
   adsSpread: number;
   moveSpread: number;
@@ -80,6 +86,7 @@ export function freshRecoil(): RecoilState {
 
 export const FEEL: Record<WeaponId, GunTune> = {
   clipper: {
+    shape: "climb",
     hipSpread: 0.044,
     adsSpread: 0.0022,
     moveSpread: 0.03,
@@ -116,6 +123,7 @@ export const FEEL: Record<WeaponId, GunTune> = {
     adsRot: [0, 0, 0],
   },
   hose: {
+    shape: "thump",
     hipSpread: 0.12,
     adsSpread: 0.038,
     moveSpread: 0.022,
@@ -152,6 +160,7 @@ export const FEEL: Record<WeaponId, GunTune> = {
     adsRot: [0.01, 0, 0],
   },
   stake: {
+    shape: "kick",
     hipSpread: 0.03,
     adsSpread: 0.0007,
     moveSpread: 0.02,
@@ -230,6 +239,13 @@ export function cone(feel: GunTune, s: SpreadSample): number {
 }
 
 export function applyShotRecoil(r: RecoilState, feel: GunTune, ads: number): void {
+  if (feel.shape === "thump") applyThump(r, feel, ads);
+  else if (feel.shape === "kick") applyKick(r, feel, ads);
+  else applyClimb(r, feel, ads);
+}
+
+/** Clipper: first shot honest, string steepens, yaw holds then weaves. */
+function applyClimb(r: RecoilState, feel: GunTune, ads: number): void {
   if (r.lastShot > feel.burstWindow) {
     r.burst = 0;
     r.yawSign = Math.random() < 0.5 ? -1 : 1;
@@ -237,23 +253,58 @@ export function applyShotRecoil(r: RecoilState, feel: GunTune, ads: number): voi
   const n = r.burst;
   const plant = adsWeight(ads);
   const scale = lerp(feel.hipRecoil, feel.adsRecoil, plant);
-  const yawMul = lerp(1.4, 0.48, plant);
-  const pitch = feel.recoilPitch + feel.followPitch * n;
+  const yawMul = lerp(1.4, 0.42, plant);
+  const first = n <= 0 ? 0.7 : 1;
+  const climb = n <= 0 ? 0 : feel.followPitch * n * (1 + 0.28 * n);
+  const pitch = feel.recoilPitch * first + climb;
   const yaw = (feel.recoilYaw + feel.followYaw * n) * r.yawSign;
   r.kickP += pitch * scale;
   r.kickY += yaw * yawMul * scale;
-  r.punchP += feel.punchPitch * lerp(1.2, feel.adsPunch, plant) * (0.82 + Math.random() * 0.28);
-  r.punchY += feel.punchYaw * r.yawSign * lerp(1.25, 0.4, plant) * (0.45 + Math.random() * 0.7);
-  if (n >= 3 && Math.random() < 0.2) r.yawSign *= -1;
+  r.punchP += feel.punchPitch * lerp(1.15, feel.adsPunch, plant) * (0.85 + Math.random() * 0.22);
+  r.punchY += feel.punchYaw * r.yawSign * lerp(1.2, 0.38, plant) * (0.5 + Math.random() * 0.55);
+  if (n >= 4 && Math.random() < 0.28) r.yawSign *= -1;
   r.burst += 1;
+  r.lastShot = 0;
+}
+
+/** Scatterhose: one pump, one thump. No string. ADS is still a hose. */
+function applyThump(r: RecoilState, feel: GunTune, ads: number): void {
+  r.yawSign = Math.random() < 0.5 ? -1 : 1;
+  const plant = adsWeight(ads);
+  const scale = lerp(feel.hipRecoil, feel.adsRecoil, plant);
+  r.kickP += feel.recoilPitch * scale;
+  r.kickY += feel.recoilYaw * r.yawSign * lerp(1.2, 0.72, plant) * scale;
+  r.punchP += feel.punchPitch * lerp(1.4, feel.adsPunch, plant);
+  r.punchY += feel.punchYaw * r.yawSign * lerp(1.15, 0.58, plant) * (0.55 + Math.random() * 0.5);
+  r.burst = 1;
+  r.lastShot = 0;
+}
+
+/** Stake: one shot, one pitch. Recover hangs. Charge does not live here. */
+function applyKick(r: RecoilState, feel: GunTune, ads: number): void {
+  r.yawSign = Math.random() < 0.5 ? -1 : 1;
+  const plant = adsWeight(ads);
+  const scale = lerp(feel.hipRecoil, feel.adsRecoil, plant);
+  r.kickP = feel.recoilPitch * scale;
+  r.kickY = feel.recoilYaw * r.yawSign * lerp(1.08, 0.36, plant) * scale;
+  r.punchP = feel.punchPitch * lerp(1.2, feel.adsPunch, plant);
+  r.punchY = feel.punchYaw * r.yawSign * lerp(1.05, 0.32, plant);
+  r.burst = 1;
   r.lastShot = 0;
 }
 
 export function recoverRecoil(r: RecoilState, feel: GunTune, dt: number): void {
   r.lastShot += dt;
   if (r.lastShot > feel.burstWindow) r.burst = 0;
-  const climbing = r.lastShot < feel.burstWindow;
-  const kickRate = feel.recoverKick + (climbing ? 0 : feel.recoverIdle);
+  let kickRate: number;
+  if (feel.shape === "kick") {
+    kickRate = feel.recoverKick;
+  } else if (feel.shape === "thump") {
+    kickRate = feel.recoverKick + feel.recoverIdle;
+  } else {
+    const climbing = r.lastShot < feel.burstWindow;
+    kickRate = feel.recoverKick + (climbing ? 0 : feel.recoverIdle);
+  }
   r.kickP = damp(r.kickP, 0, kickRate, dt);
   r.kickY = damp(r.kickY, 0, kickRate, dt);
   r.punchP = damp(r.punchP, 0, feel.recoverPunch, dt);
