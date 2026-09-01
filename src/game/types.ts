@@ -32,6 +32,7 @@ export interface Persist {
   adsSensitivity: number;
   adsToggle: boolean;
   fov: number;
+  skins: Record<WeaponId, string>;
   stats: PersistStats;
 }
 

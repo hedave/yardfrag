@@ -1,6 +1,7 @@
 import { Sfx } from "./audio";
-import type { Difficulty, MapId, Persist } from "./types";
-import { type WeaponState, WEAPONS } from "./weapons";
+import { resolveSkin, skinsFor } from "./skins";
+import type { Difficulty, MapId, Persist, WeaponId } from "./types";
+import { type WeaponState, WEAPON_ORDER, WEAPONS } from "./weapons";
 
 export interface ScoreRow {
   name: string;
@@ -60,6 +61,16 @@ export class UI {
     document.getElementById("btn-setup-back")!.onclick = () => go("panel-home");
     document.getElementById("btn-settings-back")!.onclick = () =>
       go(this.fromPause ? "panel-pause" : "panel-home");
+    document.getElementById("btn-kit")!.onclick = () => {
+      this.fromPause = false;
+      go("panel-kit");
+    };
+    document.getElementById("btn-pause-kit")!.onclick = () => {
+      this.fromPause = true;
+      go("panel-kit");
+    };
+    document.getElementById("btn-kit-back")!.onclick = () =>
+      go(this.fromPause ? "panel-pause" : "panel-home");
     document.getElementById("btn-credits-back")!.onclick = () => go("panel-home");
     document.getElementById("btn-start")!.onclick = () => {
       this.onStart?.(this.selMap.value as MapId, this.selDiff.value as Difficulty);
@@ -93,7 +104,7 @@ export class UI {
       this.persist.invertY = inv.checked;
       this.persist.adsToggle = toggle.checked;
       this.syncSettingsLabels();
-      this.onSettings?.(this.persist);
+      this.emitSettings();
     };
     sens.oninput = emit;
     ads.oninput = emit;
@@ -136,6 +147,7 @@ export class UI {
     (document.getElementById("chk-ads-toggle") as HTMLInputElement).checked = p.adsToggle;
     this.syncSettingsLabels();
     this.refreshCareer();
+    this.renderKit();
   }
 
   refreshCareer(): void {
@@ -332,6 +344,75 @@ export class UI {
     if (ho > 0) this.hurt.style.opacity = String(Math.max(0, ho - dt * 2.4));
     const fo = Number(this.flashEl.style.opacity || 0);
     if (fo > 0) this.flashEl.style.opacity = String(Math.max(0, fo - dt * 8));
+  }
+
+  private emitSettings(): void {
+    this.onSettings?.(this.persist);
+  }
+
+  private pickSkin(weapon: WeaponId, skinId: string): void {
+    this.persist.skins[weapon] = skinId;
+    this.renderKit();
+    this.emitSettings();
+    void this.sfx.resume();
+    this.sfx.click();
+  }
+
+  private renderKit(): void {
+    const home = document.getElementById("kit-home");
+    const grid = document.getElementById("kit-grid");
+    if (home) home.innerHTML = this.kitStripHtml();
+    if (grid) grid.innerHTML = this.kitGridHtml();
+    this.bindKitButtons(home);
+    this.bindKitButtons(grid);
+    this.syncKitCopy();
+  }
+
+  private bindKitButtons(root: HTMLElement | null): void {
+    if (!root) return;
+    root.querySelectorAll<HTMLButtonElement>("[data-skin]").forEach((btn) => {
+      btn.onclick = () => {
+        const weapon = btn.dataset.weapon as WeaponId;
+        const skinId = btn.dataset.skin;
+        if (!weapon || !skinId) return;
+        this.pickSkin(weapon, skinId);
+      };
+      btn.addEventListener("pointerenter", () => this.sfx.hover());
+    });
+  }
+
+  private kitStripHtml(): string {
+    return WEAPON_ORDER.map((id) => {
+      const chosen = this.persist.skins[id];
+      const chips = skinsFor(id)
+        .map((s) => {
+          const on = s.id === chosen ? " on" : "";
+          return `<button type="button" class="kit-chip${on}" data-weapon="${id}" data-skin="${s.id}" style="--swatch:${s.swatch}" title="${esc(s.name)}" aria-label="${esc(s.name)}"></button>`;
+        })
+        .join("");
+      return `<div class="kit-row"><span class="kit-row-name">${esc(WEAPONS[id].name)}</span><div class="kit-chips">${chips}</div></div>`;
+    }).join("");
+  }
+
+  private kitGridHtml(): string {
+    return WEAPON_ORDER.map((id) => {
+      const chosen = this.persist.skins[id];
+      const cards = skinsFor(id)
+        .map((s) => {
+          const on = s.id === chosen ? " on" : "";
+          return `<button type="button" class="kit-swatch${on}" data-weapon="${id}" data-skin="${s.id}" style="--swatch:${s.swatch}"><span class="kit-swatch-chip"></span><span class="kit-swatch-name">${esc(s.name)}</span></button>`;
+        })
+        .join("");
+      return `<div class="kit-weap"><div class="kit-weap-name">${esc(WEAPONS[id].name)}</div><div class="kit-swatches">${cards}</div></div>`;
+    }).join("");
+  }
+
+  private syncKitCopy(): void {
+    const names = WEAPON_ORDER.map((id) => resolveSkin(id, this.persist.skins[id]).name);
+    const summary = document.getElementById("kit-summary");
+    if (summary) summary.textContent = names.join(" · ");
+    const setup = document.getElementById("kit-setup-line");
+    if (setup) setup.textContent = `Kit — ${names.join(" / ")}`;
   }
 
   private showPanel(id: string): void {
