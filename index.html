@@ -70,6 +70,14 @@
             <div id="charge-wrap" class="hidden">
               <div id="charge-fill"></div>
             </div>
+            <div id="gadget-row">
+              <span id="gadget-name">MULCH TIN</span>
+              <span id="lamp-chip">LAMP</span>
+              <span id="gadget-ammo">2</span>
+            </div>
+            <div id="cook-wrap" class="hidden">
+              <div id="cook-fill"></div>
+            </div>
           </div>
         </div>
         <div id="center-msg"></div>
@@ -95,7 +103,7 @@
             <tbody id="board-body"></tbody>
           </table>
         </div>
-        <div id="hint" class="hidden">click the yard to look · RMB or F to sight · Ctrl crouch · Shift sprint · Tab for the board</div>
+        <div id="hint" class="hidden">click the yard to look · RMB or F to sight · G toss · L lamp · Ctrl crouch · Shift sprint · Tab for the board</div>
       </div>
 
       <div id="touch" class="hidden">
@@ -109,6 +117,8 @@
         <button type="button" id="btn-sprint">RUN</button>
         <button type="button" id="btn-crouch">DUCK</button>
         <button type="button" id="btn-reload">RELOAD</button>
+        <button type="button" id="btn-toss">TOSS</button>
+        <button type="button" id="btn-lamp">LAMP</button>
         <div id="btn-weps">
           <button type="button" data-weap="0">1</button>
           <button type="button" data-weap="1">2</button>
@@ -208,7 +218,11 @@
               Hold <strong>Ctrl</strong> to crouch — shorter stance, slower
               step. Hold <strong>Shift</strong> to sprint. Sight (RMB / F)
               cancels sprint; leftover sway still taxes the first shots.
-              Crouch and sight can stack.
+              Crouch and sight can stack. Hold <strong>G</strong> (or Mouse5)
+              to cook a yard tin, release to toss. <strong>4</strong> /
+              <strong>5</strong> pick Mulch Tin or Wasp Jar.
+              <strong>L</strong> (or V / Mouse4) toggles the work lamp —
+              it reads on Cistern Roofs. Sight stays on RMB / F.
             </p>
             <div class="row">
               <button type="button" class="btn" id="btn-settings-back">

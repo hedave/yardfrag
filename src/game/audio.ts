@@ -204,6 +204,59 @@ export class Sfx {
     this.tone(ctx.currentTime, 840, 840, 0.018, "sine", 0.014);
   }
 
+  cook(): void {
+    const ctx = this.ensure();
+    this.tone(ctx.currentTime, 180, 240, 0.05, "triangle", 0.03);
+    this.burst(this.dirt, ctx.currentTime, 0.04, 260, 90, 0.06, 0.5);
+  }
+
+  toss(): void {
+    const ctx = this.ensure();
+    this.burst(this.dirt, ctx.currentTime, 0.07, 340, 80, 0.12, 0.45);
+    this.tone(ctx.currentTime, 210, 90, 0.08, "sine", 0.04);
+  }
+
+  bounce(): void {
+    const ctx = this.ensure();
+    this.burst(this.dirt, ctx.currentTime, 0.035, 180, 60, 0.1, 0.4);
+    this.tone(ctx.currentTime, 140, 70, 0.03, "sine", 0.025);
+  }
+
+  stick(): void {
+    const ctx = this.ensure();
+    this.burst(this.dirt, ctx.currentTime, 0.05, 220, 70, 0.1, 0.5);
+    this.tone(ctx.currentTime, 90, 50, 0.05, "triangle", 0.03);
+  }
+
+  pop(kind: "mulch" | "wasp"): void {
+    const ctx = this.ensure();
+    const t = ctx.currentTime;
+    if (kind === "mulch") {
+      this.burst(this.dirt, t, 0.22, 280, 50, 0.34, 0.4);
+      this.burst(this.white, t, 0.1, 700, 140, 0.16, 0.55);
+      this.tone(t, 78, 36, 0.18, "sine", 0.12);
+    } else {
+      this.burst(this.white, t, 0.16, 1800, 420, 0.18, 0.9);
+      this.tone(t, 520, 180, 0.12, "square", 0.045);
+      this.tone(t, 880, 240, 0.1, "triangle", 0.03);
+    }
+  }
+
+  lamp(on: boolean): void {
+    const ctx = this.ensure();
+    if (on) {
+      this.tone(ctx.currentTime, 420, 280, 0.04, "sine", 0.03);
+      this.burst(this.white, ctx.currentTime, 0.03, 900, 400, 0.035, 0.7);
+    } else {
+      this.tone(ctx.currentTime, 260, 140, 0.04, "sine", 0.022);
+    }
+  }
+
+  dry(): void {
+    const ctx = this.ensure();
+    this.tone(ctx.currentTime, 160, 90, 0.05, "square", 0.028);
+  }
+
   preview(): void {
     const ctx = this.ensure();
     this.tone(ctx.currentTime, 520, 360, 0.05, "triangle", 0.045);

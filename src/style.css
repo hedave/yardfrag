@@ -593,6 +593,68 @@ body {
   background: var(--straw);
 }
 
+#gadget-row {
+  margin-top: 7px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+#gadget-name {
+  letter-spacing: 0.18em;
+}
+
+#gadget-ammo {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--straw);
+  font-variant-numeric: tabular-nums;
+}
+
+#lamp-chip {
+  display: none;
+  padding: 2px 7px 1px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #1c1612;
+  background: var(--straw);
+  vertical-align: 1px;
+  box-shadow: 0 0 0 1px #111;
+}
+
+#lamp-chip.on {
+  display: inline-block;
+}
+
+.ammo-vital.gadget-dry #gadget-ammo {
+  color: var(--danger);
+}
+
+.ammo-vital.cooking #gadget-name {
+  color: var(--clay);
+}
+
+#cook-wrap {
+  margin-top: 6px;
+  height: 6px;
+  background: #3a2a22;
+}
+
+#cook-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--clay);
+}
+
+#cook-wrap.hot #cook-fill {
+  background: var(--danger);
+}
+
 #center-msg {
   position: absolute;
   left: 50%;
@@ -1066,6 +1128,8 @@ h1 {
 #btn-sprint,
 #btn-crouch,
 #btn-reload,
+#btn-toss,
+#btn-lamp,
 #btn-pause,
 #btn-board,
 #btn-weps button {
@@ -1124,6 +1188,20 @@ h1 {
   right: 104px;
   bottom: 148px;
   width: 70px;
+  height: 40px;
+}
+
+#btn-toss {
+  right: 28px;
+  bottom: 198px;
+  width: 64px;
+  height: 40px;
+}
+
+#btn-lamp {
+  right: 104px;
+  bottom: 198px;
+  width: 64px;
   height: 40px;
 }
 

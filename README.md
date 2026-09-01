@@ -29,6 +29,8 @@ npm run preview
 
 - **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse or F hold · **Jump** Space · **Sprint** Shift · **Crouch** Ctrl (hold)
 - **Reload** R · **Weapons** 1 / 2 / 3 or scroll
+- **Toss** hold G or Mouse5 to cook, release to throw · **4** Mulch Tin · **5** Wasp Jar · **Q** cycle
+- **Work lamp** L (or V / Mouse4)
 - **Scoreboard** Tab · **Pause** Esc
 - First to 20 frags or 6 minutes. Five yardling bots, free-for-all.
 
@@ -41,6 +43,15 @@ Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, o
 | **Clipper** | Hitscan hedge shears. Hip sprays; sight is a planted tap gun. Recoil climbs a string. |
 | **Scatterhose** | Seed-pellet shotgun. Hip is a wide hose; sight is still a hose, just denser. Big shove. |
 | **Stake** | Trellis needle. LMB hold charges, RMB sights. Charge is not the zoom. Heavy single kick. |
+
+Two tins per life each. Hold **G** to cook; a full cook pops in your hands.
+
+| Tin | Feel |
+| --- | --- |
+| **Mulch Tin** | Bouncing fertilizer can. Fuse, then a dirt-blast. Heavy splash. |
+| **Wasp Jar** | Clay jar. Sticks to the first wall or floor, then bursts. Bots flinch. |
+
+**Work lamp** is a view-mounted spot. It matters on Cistern Roofs; Potting Hall is already bright so it stays a faint fill. Sight stays on RMB / F — G and L do not steal ADS.
 
 ### Yards
 
