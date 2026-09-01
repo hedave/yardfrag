@@ -240,8 +240,8 @@ export class Game {
     this.phase = "menu";
     this.ui.showHud(false);
     this.ui.showTouch(false);
-    this.ui.hideMenu();
-    this.ui.showMenu("home");
+    // Keep the current menu panel. Reloading the orbit used to call
+    // showMenu("home"), which kicked Match setup back to Play.
   }
 
   private loadArena(id: MapId): void {
@@ -1121,7 +1121,7 @@ export class Game {
 
   private hurt(target: Fighter, dmg: number, src: Fighter, verb?: string): void {
     if (!target.alive) return;
-    if (target.guard > 0 && !verb) return;
+    if (target.guard > 0) return;
     target.hp -= dmg;
     target.lastAttacker = src.id;
     if (target.mesh) {

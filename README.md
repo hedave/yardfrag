@@ -27,7 +27,7 @@ npm run preview
 
 ## Play
 
-- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse or F hold · **Jump** Space · **Sprint** Shift · **Crouch** Ctrl (hold)
+- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse or F hold · **Jump** Space · **Sprint** Shift · **Crouch** Ctrl or C (hold)
 - **Reload** R · **Weapons** 1 / 2 / 3 or scroll
 - **Toss** hold G or Mouse5 to cook, release to throw · **4** Mulch Tin · **5** Wasp Jar · **Q** cycle
 - **Work lamp** L (or V / Mouse4)
@@ -60,7 +60,7 @@ Two tins per life each. Hold **G** to cook; a full cook pops in your hands.
 
 ### Settings
 
-Look feel, sight feel (ADS multiplier), field of view, hold vs toggle sight, volume, and invert-Y persist in `localStorage` with career stats (frags, falls, time, matches). Settings lists the movement binds: hold Ctrl to crouch, hold Shift to sprint, sight cancels sprint.
+Look feel, sight feel (ADS multiplier), field of view, hold vs toggle sight, volume, and invert-Y persist in `localStorage` with career stats (frags, falls, time, matches). Settings lists the movement binds: hold Ctrl or C to crouch, hold Shift to sprint, sight cancels sprint.
 
 ### Mobile
 
