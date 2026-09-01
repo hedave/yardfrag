@@ -4,6 +4,7 @@ export class Input {
   jump = false;
   jumpPressed = false;
   sprint = false;
+  crouch = false;
   firing = false;
   firePressed = false;
   fireReleased = false;
@@ -44,7 +45,7 @@ export class Input {
 
   attach(): void {
     const onKey = (e: KeyboardEvent, down: boolean) => {
-      if (["Space", "Tab"].includes(e.code)) e.preventDefault();
+      if (["Space", "Tab", "ControlLeft", "ControlRight"].includes(e.code)) e.preventDefault();
       if (down) this.keys.add(e.code);
       else this.keys.delete(e.code);
       if (down && e.code === "Escape") this.pause = true;
@@ -164,6 +165,7 @@ export class Input {
     this.jumpPressed = jumping && !this.jump;
     this.jump = jumping;
     this.sprint = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
+    this.crouch = this.keys.has("ControlLeft") || this.keys.has("ControlRight");
     this.tab = this.keys.has("Tab") || this.keys.has("KeyB");
     this.adsHeld = this.adsMouse || this.adsKey;
     if (this.fireTouch) this.firing = true;
@@ -192,6 +194,7 @@ export class Input {
     const ads = this.touchRoot.querySelector("#btn-ads") as HTMLElement | null;
     const jump = this.touchRoot.querySelector("#btn-jump") as HTMLElement;
     const sprint = this.touchRoot.querySelector("#btn-sprint") as HTMLElement;
+    const crouch = this.touchRoot.querySelector("#btn-crouch") as HTMLElement | null;
     const reload = this.touchRoot.querySelector("#btn-reload") as HTMLElement;
     const pause = this.touchRoot.querySelector("#btn-pause") as HTMLElement;
     const stick = this.touchRoot.querySelector("#joy-stick") as HTMLElement;
@@ -290,6 +293,13 @@ export class Input {
     }, () => {
       this.keys.delete("ShiftLeft");
     });
+    if (crouch) {
+      hold(
+        crouch,
+        () => this.keys.add("ControlLeft"),
+        () => this.keys.delete("ControlLeft"),
+      );
+    }
     hold(reload, () => {
       this.reload = true;
     });

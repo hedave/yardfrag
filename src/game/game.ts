@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { AABB, losClear, moveBody, onGround, rayAABB, rayWorld } from "./collision";
+import { AABB, capsuleClear, losClear, moveBody, onGround, rayAABB, rayWorld } from "./collision";
 import { Sfx } from "./audio";
 import { Fx } from "./fx";
 import { Input } from "./input";
@@ -48,14 +48,24 @@ import {
 } from "./gunfeel";
 
 const EYE = 1.55;
+const EYE_CROUCH = 0.88;
 const HX = 0.36;
 const HZ = 0.36;
 const BODY_H = 1.7;
+const BODY_CROUCH = 1.02;
 const GRAVITY = 24;
 const WALK = 6.2;
 const SPRINT = 9.4;
+const CROUCH = 2.65;
 const JUMP_V = 7.55;
 const DEATHCAM_T = 2.55;
+/** Ground ease rates — original damp, not a Source/Quake accel port. */
+const ACCEL_WALK = 14;
+const ACCEL_SPRINT = 8.4;
+const ACCEL_CROUCH = 11;
+const STOP_WALK = 10;
+const STOP_SPRINT = 6.4;
+const AIR_ACCEL = 10;
 
 interface Fighter {
   id: number;
@@ -85,6 +95,8 @@ interface Fighter {
   hitFlash: number;
   adsWant: boolean;
   sprinting: boolean;
+  crouching: boolean;
+  eyeH: number;
   landInacc: number;
   recoil: ReturnType<typeof freshRecoil>;
 }
@@ -324,6 +336,8 @@ export class Game {
       hitFlash: 0,
       adsWant: false,
       sprinting: false,
+      crouching: false,
+      eyeH: EYE,
       landInacc: 0,
       recoil: freshRecoil(),
     };
@@ -369,6 +383,8 @@ export class Game {
     f.guard = 1.7;
     f.adsWant = false;
     f.sprinting = false;
+    f.crouching = false;
+    f.eyeH = EYE;
     f.landInacc = 0;
     f.weap.ads = 0;
     f.weap.bloom = 0;
@@ -501,6 +517,13 @@ export class Game {
     this.ui.hud.dataset.fov = this.camera.fov.toFixed(1);
     this.ui.hud.dataset.spread = spreadNow.toFixed(4);
     this.ui.hud.dataset.weap = you.weap.id;
+    this.ui.hud.dataset.crouch = you.crouching ? "1" : "0";
+    this.ui.hud.dataset.sprint = you.sprinting ? "1" : "0";
+    this.ui.hud.dataset.eye = you.eyeH.toFixed(2);
+    this.ui.hud.dataset.body = bodyHeight(you).toFixed(2);
+    this.ui.hud.dataset.speed = Math.hypot(you.vx, you.vz).toFixed(2);
+    this.ui.hud.dataset.ready = you.weap.ready.toFixed(3);
+    this.ui.hud.dataset.sprintFade = you.weap.sprintFade.toFixed(3);
     this.ui.meta(this.timeLeft, you.kills, FRAG_LIMIT);
     this.ui.setScoreboard(this.input.tab || this.boardOn, this.rows(), this.arena!.title);
     this.ui.showHint(this.phase === "playing" && !this.input.locked && !this.input.isTouch());
@@ -510,13 +533,11 @@ export class Game {
   private controlPlayer(p: Fighter, dt: number): void {
     const feel = FEEL[p.weap.id];
     this.updateAdsWant(p);
-    const canAds =
-      p.weap.reloading <= 0 && p.weap.swap <= 0 && p.alive && !p.sprinting;
+    this.stepCrouch(p, this.input.crouch);
     if (p.adsWant && p.sprinting) {
-      p.sprinting = false;
-      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay * 0.45);
-      p.weap.sprintFade = 1;
+      this.leaveSprint(p, feel.sprintDelay);
     }
+    const canAds = p.weap.reloading <= 0 && p.weap.swap <= 0 && p.alive && !p.sprinting;
     p.weap.ads = stepAds(p.weap.ads, p.adsWant && canAds, feel.adsTime, dt);
     if (p.weap.ads > 0.35 && !this.adsAudio) {
       this.adsAudio = true;
@@ -542,11 +563,9 @@ export class Game {
     }
     if (this.input.reload) this.startReload(p);
 
-    const wantSprint = this.input.sprint && p.weap.ads < 0.2 && !p.adsWant;
-    if (p.sprinting && !wantSprint) {
-      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
-      p.weap.sprintFade = 1;
-    }
+    const wantSprint =
+      this.input.sprint && !p.crouching && p.weap.ads < 0.2 && !p.adsWant;
+    if (p.sprinting && !wantSprint) this.leaveSprint(p, feel.sprintDelay);
     p.sprinting = wantSprint;
     if (p.sprinting) {
       p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
@@ -557,11 +576,7 @@ export class Game {
     if (def.charge) {
       const chargeOk = p.weap.mag > 0 && p.weap.reloading <= 0 && p.weap.swap <= 0;
       if (this.input.firing && chargeOk) {
-        if (p.sprinting) {
-          p.sprinting = false;
-          p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
-          p.weap.sprintFade = 1;
-        }
+        if (p.sprinting) this.leaveSprint(p, feel.sprintDelay);
         if (p.weap.ready <= 0) {
           if (!p.weap.charging) {
             p.weap.charging = true;
@@ -579,7 +594,8 @@ export class Game {
     }
 
     const adsSlow = 1 - p.weap.ads * (1 - feel.adsMove);
-    const speed = (p.sprinting ? SPRINT : WALK) * adsSlow;
+    const gait = p.crouching ? CROUCH : p.sprinting ? SPRINT : WALK;
+    const speed = gait * adsSlow;
     const wishX =
       Math.cos(p.yaw) * this.input.strafe + -Math.sin(p.yaw) * this.input.forward;
     const wishZ =
@@ -589,11 +605,14 @@ export class Game {
     const nz = wlen > 0 ? wishZ / wlen : 0;
     this.lastStrafe = damp(this.lastStrafe, this.input.strafe, 10, dt);
     if (p.grounded) {
-      p.vx = nx * speed;
-      p.vz = nz * speed;
+      const going = wlen > 0.08;
+      const accel = p.crouching ? ACCEL_CROUCH : p.sprinting ? ACCEL_SPRINT : ACCEL_WALK;
+      const stop = p.sprinting || Math.hypot(p.vx, p.vz) > WALK * 0.85 ? STOP_SPRINT : STOP_WALK;
+      p.vx = damp(p.vx, going ? nx * speed : 0, going ? accel : stop, dt);
+      p.vz = damp(p.vz, going ? nz * speed : 0, going ? accel : stop, dt);
     } else {
-      p.vx += nx * 10 * dt;
-      p.vz += nz * 10 * dt;
+      p.vx += nx * AIR_ACCEL * dt;
+      p.vz += nz * AIR_ACCEL * dt;
       const h = Math.hypot(p.vx, p.vz);
       const cap = SPRINT * 1.05;
       if (h > cap) {
@@ -601,13 +620,35 @@ export class Game {
         p.vz = (p.vz / h) * cap;
       }
     }
+    const eyeWant = p.crouching ? EYE_CROUCH : EYE;
+    p.eyeH = damp(p.eyeH, eyeWant, p.crouching ? 18 : 11, dt);
     if ((this.input.jump || this.input.jumpPressed) && (p.grounded || p.coyote > 0)) {
       p.vy = JUMP_V;
       p.grounded = false;
       p.coyote = 0;
       this.sfx.jump();
     }
-    this.sfx.foot(dt, wlen > 0.2 && p.grounded, p.sprinting);
+    this.sfx.foot(dt, wlen > 0.2 && p.grounded, p.sprinting && !p.crouching);
+  }
+
+  private stepCrouch(p: Fighter, want: boolean): void {
+    if (want) {
+      if (!p.crouching && p.sprinting) this.leaveSprint(p, FEEL[p.weap.id].sprintDelay);
+      p.crouching = true;
+      return;
+    }
+    if (!p.crouching) return;
+    if (
+      capsuleClear(p.x, p.y, p.z, HX, BODY_H * 0.5, HZ, this.arena!.colliders)
+    ) {
+      p.crouching = false;
+    }
+  }
+
+  private leaveSprint(p: Fighter, delay: number): void {
+    p.sprinting = false;
+    p.weap.ready = Math.max(p.weap.ready, delay);
+    p.weap.sprintFade = 1;
   }
 
   private updateAdsWant(p: Fighter): void {
@@ -636,10 +677,10 @@ export class Game {
     }
 
     const target = this.pickTarget(f, mean ? 0.72 : 1);
-    const eyeY = f.y + EYE;
+    const eyeY = f.y + f.eyeH;
     if (target) {
       const dx = target.x - f.x;
-      const dy = target.y + 1.42 - eyeY;
+      const dy = target.y + (target.crouching ? 0.72 : 1.42) - eyeY;
       const dz = target.z - f.z;
       const dist = Math.hypot(dx, dy, dz);
       const yaw = Math.atan2(-dx, -dz);
@@ -716,11 +757,11 @@ export class Game {
   private pickTarget(self: Fighter, playerBias: number): Fighter | null {
     let best: Fighter | null = null;
     let bestScore = Infinity;
-    const eyeY = self.y + EYE;
+    const eyeY = self.y + self.eyeH;
     for (const o of this.fighters) {
       if (!o.alive || o.id === self.id) continue;
       const tx = o.x;
-      const ty = o.y + 1.4;
+      const ty = o.y + (o.crouching ? 0.72 : 1.4);
       const tz = o.z;
       if (!losClear(self.x, eyeY, self.z, tx, ty, tz, this.arena!.colliders)) continue;
       let d = Math.hypot(tx - self.x, ty - eyeY, tz - self.z);
@@ -749,7 +790,7 @@ export class Game {
       f.vy,
       f.vz,
       HX,
-      BODY_H * 0.5,
+      bodyHeight(f) * 0.5,
       HZ,
       dt,
       this.arena!.colliders,
@@ -788,7 +829,7 @@ export class Game {
     const feel = FEEL[f.weap.id];
     if (f.weap.cooldown > 0) f.weap.cooldown -= dt;
     if (f.weap.ready > 0) f.weap.ready -= dt;
-    if (f.sprinting) f.weap.sprintFade = 1;
+    if (f.sprinting || f.weap.ready > 0) f.weap.sprintFade = 1;
     else f.weap.sprintFade = damp(f.weap.sprintFade, 0, feel.sprintFadeRate, dt);
     f.weap.bloom = damp(f.weap.bloom, 0, feel.bloomDecay, dt);
     if (f.weap.reloading > 0) {
@@ -873,9 +914,8 @@ export class Game {
     const feel = FEEL[f.weap.id];
     if (f.weap.reloading > 0 || f.weap.cooldown > 0 || f.weap.swap > 0) return;
     if (f.sprinting || f.weap.ready > 0) {
-      f.sprinting = false;
-      f.weap.ready = Math.max(f.weap.ready, feel.sprintDelay);
-      f.weap.sprintFade = 1;
+      if (f.sprinting) this.leaveSprint(f, feel.sprintDelay);
+      else f.weap.sprintFade = 1;
       return;
     }
     if (f.weap.mag <= 0) {
@@ -921,7 +961,7 @@ export class Game {
     }
     let any = false;
     let head = false;
-    let hitY = src.y + EYE;
+    let hitY = src.y + src.eyeH;
     for (let i = 0; i < pellets; i++) {
       const dir = spreadDir(base.x, base.y, base.z, spread);
       const hit = this.traceShot(src, eye.x, eye.y, eye.z, dir.x, dir.y, dir.z, range);
@@ -968,8 +1008,10 @@ export class Game {
       : null;
     for (const o of this.fighters) {
       if (!o.alive || o.id === src.id) continue;
-      const headBox = new AABB(o.x - 0.2, o.y + 1.36, o.z - 0.2, o.x + 0.2, o.y + 1.76, o.z + 0.2);
-      const bodyBox = new AABB(o.x - 0.32, o.y + 0.12, o.z - 0.32, o.x + 0.32, o.y + 1.36, o.z + 0.32);
+      const tall = bodyHeight(o);
+      const headBot = o.y + tall - 0.34;
+      const headBox = new AABB(o.x - 0.2, headBot, o.z - 0.2, o.x + 0.2, o.y + tall + 0.06, o.z + 0.2);
+      const bodyBox = new AABB(o.x - 0.32, o.y + 0.12, o.z - 0.32, o.x + 0.32, headBot, o.z + 0.32);
       const headHit = rayAABB(ox, oy, oz, dx, dy, dz, headBox, bestT);
       const bodyHit = rayAABB(ox, oy, oz, dx, dy, dz, bodyBox, bestT);
       const use = headHit && (!bodyHit || headHit.t <= bodyHit.t) ? headHit : bodyHit;
@@ -1070,7 +1112,7 @@ export class Game {
     const zoom = lerp(this.hipFov, feel.adsFov, adsWeight(p.weap.ads));
     this.camera.fov = damp(this.camera.fov, zoom, 22, dt);
     this.camera.updateProjectionMatrix();
-    this.camera.position.set(p.x, p.y + EYE, p.z);
+    this.camera.position.set(p.x, p.y + p.eyeH, p.z);
     const plant = adsWeight(p.weap.ads);
     const roll = -this.lastStrafe * 0.038 * (1 - plant * 0.88) + p.recoil.punchY * 0.42;
     this.camera.rotation.set(
@@ -1151,7 +1193,7 @@ export class Game {
   }
 
   private eye(f: Fighter): { x: number; y: number; z: number } {
-    return { x: f.x, y: f.y + EYE, z: f.z };
+    return { x: f.x, y: f.y + f.eyeH, z: f.z };
   }
 
   private look(yaw: number, pitch: number): { x: number; y: number; z: number } {
@@ -1170,6 +1212,10 @@ export class Game {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
   }
+}
+
+function bodyHeight(f: Fighter): number {
+  return f.crouching ? BODY_CROUCH : BODY_H;
 }
 
 function turnToward(cur: number, target: number, rate: number, dt: number): number {
