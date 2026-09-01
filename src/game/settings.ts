@@ -1,3 +1,4 @@
+import { DEFAULT_SKINS, resolveSkinId } from "./skins";
 import type { Persist, PersistStats } from "./types";
 
 const KEY = "yardfrag-v1";
@@ -16,6 +17,7 @@ export const DEFAULT_PERSIST: Persist = {
   adsSensitivity: 0.85,
   adsToggle: false,
   fov: 80,
+  skins: { ...DEFAULT_SKINS },
   stats: { ...DEFAULT_STATS },
 };
 
@@ -31,6 +33,7 @@ export function loadPersist(): Persist {
       adsSensitivity: clampNum(parsed.adsSensitivity, 0.35, 1.4, 0.85),
       adsToggle: Boolean(parsed.adsToggle),
       fov: clampNum(parsed.fov, 70, 100, 80),
+      skins: readSkins(parsed.skins),
       stats: {
         kills: Math.max(0, parsed.stats?.kills ?? 0),
         deaths: Math.max(0, parsed.stats?.deaths ?? 0),
@@ -50,6 +53,15 @@ export function savePersist(data: Persist): void {
 export function formatCareer(stats: PersistStats): string {
   const m = Math.floor(stats.seconds / 60);
   return `Career — ${stats.kills} frags / ${stats.deaths} falls / ${m} min in the yard / ${stats.matches} matches`;
+}
+
+function readSkins(raw: Persist["skins"] | undefined): Persist["skins"] {
+  const src = raw ?? DEFAULT_SKINS;
+  return {
+    clipper: resolveSkinId("clipper", src.clipper),
+    hose: resolveSkinId("hose", src.hose),
+    stake: resolveSkinId("stake", src.stake),
+  };
 }
 
 function clampNum(

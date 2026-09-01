@@ -143,10 +143,15 @@
               <button type="button" class="btn btn-block" id="btn-settings">
                 Settings
               </button>
+              <button type="button" class="btn btn-block" id="btn-kit">
+                Kit
+                <span id="kit-summary" class="btn-meta"></span>
+              </button>
               <button type="button" class="btn btn-ghost" id="btn-credits">
                 Credits
               </button>
             </div>
+            <div id="kit-home" class="kit-strip" aria-label="Weapon kit"></div>
             <div id="career" class="career"></div>
           </section>
 
@@ -169,6 +174,7 @@
             <p class="fine">
               First to 20 frags or 6 minutes. Five yardlings, free-for-all.
             </p>
+            <p class="fine" id="kit-setup-line"></p>
             <div class="row">
               <button type="button" class="btn primary" id="btn-start">
                 Drop in
@@ -207,6 +213,17 @@
               <button type="button" class="btn" id="btn-settings-back">
                 Back
               </button>
+            </div>
+          </section>
+
+          <section id="panel-kit" class="panel hidden">
+            <h2>Kit</h2>
+            <p class="fine">
+              Paint the tools. Same clip, same hose, same stake — color only.
+            </p>
+            <div id="kit-grid" class="kit-grid"></div>
+            <div class="row">
+              <button type="button" class="btn" id="btn-kit-back">Back</button>
             </div>
           </section>
 
@@ -254,6 +271,7 @@
               <button type="button" class="btn" id="btn-pause-settings">
                 Settings
               </button>
+              <button type="button" class="btn" id="btn-pause-kit">Kit</button>
               <button type="button" class="btn" id="btn-quit">Quit yard</button>
             </div>
           </section>

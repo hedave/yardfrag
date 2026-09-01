@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { HIT_FLASH, PLAYER, POT_INK, SIGNAL, SIGNAL_HEX } from "./palette";
+import type { SkinSlot } from "./skins";
 import type { WeaponId } from "./types";
 
 const potGeo = new THREE.CylinderGeometry(0.28, 0.34, 0.42, 8);
@@ -164,68 +165,71 @@ export function createViewmodel(id: WeaponId): THREE.Group {
   irons.name = "irons";
 
   if (id === "clipper") {
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.62), cedar);
+    const body = slotMesh(new THREE.BoxGeometry(0.12, 0.14, 0.62), cedar, "stock");
     body.position.set(0, 0, -0.28);
     g.add(body);
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.04, 0.5), tin);
+    const blade = slotMesh(new THREE.BoxGeometry(0.055, 0.04, 0.5), tin, "metal");
     blade.position.set(0, 0.055, -0.72);
     g.add(blade);
     for (let i = 0; i < 6; i++) {
-      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.028, 0.035), tin);
+      const tooth = slotMesh(new THREE.BoxGeometry(0.1, 0.028, 0.035), tin, "metal");
       tooth.position.set(0, 0.08, -0.52 - i * 0.075);
       g.add(tooth);
     }
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.2, 0.09), clay);
+    const grip = slotMesh(new THREE.BoxGeometry(0.07, 0.2, 0.09), clay, "accent");
     grip.position.set(0, -0.16, 0.02);
     g.add(grip);
-    const hood = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.028, 0.05), cedar);
+    const hood = slotMesh(new THREE.BoxGeometry(0.09, 0.028, 0.05), cedar, "stock");
     hood.position.set(0, 0.09, -0.08);
-    const rearL = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.07, 0.016), iron);
+    const rearL = slotMesh(new THREE.BoxGeometry(0.016, 0.07, 0.016), iron, "iron");
     rearL.position.set(-0.03, 0.122, -0.1);
     const rearR = rearL.clone();
     rearR.position.x = 0.03;
-    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.012, 0.016), iron);
+    const bridge = slotMesh(new THREE.BoxGeometry(0.078, 0.012, 0.016), iron, "iron");
     bridge.position.set(0, 0.09, -0.1);
-    const front = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.055, 0.012), iron);
+    const front = slotMesh(new THREE.BoxGeometry(0.012, 0.055, 0.012), iron, "iron");
     front.position.set(0, 0.102, -0.94);
-    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), clay);
+    const bead = slotMesh(new THREE.SphereGeometry(0.012, 6, 6), clay, "accent");
     bead.position.set(0, 0.134, -0.94);
+    g.add(makeDecal(0.16, 0.09, -0.061, 0.02, -0.22));
     irons.add(hood, rearL, rearR, bridge, front, bead);
   } else if (id === "hose") {
-    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.32, 8), clay);
+    const tank = slotMesh(new THREE.CylinderGeometry(0.11, 0.13, 0.32, 8), clay, "accent");
     tank.rotation.z = Math.PI / 2;
     tank.position.set(0, -0.02, -0.12);
     g.add(tank);
-    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.1, 0.3, 8), tin);
+    const nozzle = slotMesh(new THREE.CylinderGeometry(0.045, 0.1, 0.3, 8), tin, "metal");
     nozzle.rotation.x = Math.PI / 2;
     nozzle.position.set(0, 0, -0.42);
     g.add(nozzle);
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.2, 0.1), cedar);
+    const grip = slotMesh(new THREE.BoxGeometry(0.075, 0.2, 0.1), cedar, "stock");
     grip.position.set(0, -0.16, 0.04);
     g.add(grip);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.01, 8, 18), iron);
+    const ring = slotMesh(new THREE.TorusGeometry(0.046, 0.01, 8, 18), iron, "iron");
     ring.position.set(0, 0.078, -0.16);
-    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 6), clay);
+    const bead = slotMesh(new THREE.SphereGeometry(0.014, 6, 6), clay, "accent");
     bead.position.set(0, 0.076, -0.56);
+    g.add(makeDecal(0.14, 0.1, -0.128, -0.02, -0.12));
     irons.add(ring, bead);
   } else {
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.032, 1.18, 8), tin);
+    const barrel = slotMesh(new THREE.CylinderGeometry(0.026, 0.032, 1.18, 8), tin, "metal");
     barrel.rotation.x = Math.PI / 2;
     barrel.position.set(0, 0, -0.48);
     g.add(barrel);
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.11, 0.34), cedar);
+    const stock = slotMesh(new THREE.BoxGeometry(0.07, 0.11, 0.34), cedar, "stock");
     stock.position.set(0, -0.06, 0.12);
     g.add(stock);
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.08, 8), clay);
+    const collar = slotMesh(new THREE.CylinderGeometry(0.04, 0.04, 0.08, 8), clay, "accent");
     collar.rotation.x = Math.PI / 2;
     collar.position.set(0, 0, -0.08);
     g.add(collar);
-    const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.009, 8, 20), iron);
+    const hoop = slotMesh(new THREE.TorusGeometry(0.05, 0.009, 8, 20), iron, "iron");
     hoop.position.set(0, 0.082, -0.04);
-    const pin = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.05, 0.01), iron);
+    const pin = slotMesh(new THREE.BoxGeometry(0.01, 0.05, 0.01), iron, "iron");
     pin.position.set(0, 0.078, -1.02);
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 6), clay);
+    const tip = slotMesh(new THREE.SphereGeometry(0.012, 6, 6), clay, "accent");
     tip.position.set(0, 0.108, -1.02);
+    g.add(makeDecal(0.12, 0.08, -0.036, -0.04, 0.1));
     irons.add(hoop, pin, tip);
   }
 
@@ -235,6 +239,32 @@ export function createViewmodel(id: WeaponId): THREE.Group {
     if (o instanceof THREE.Mesh) o.castShadow = false;
   });
   return g;
+}
+
+function slotMesh(
+  geo: THREE.BufferGeometry,
+  mat: THREE.Material,
+  slot: SkinSlot,
+): THREE.Mesh {
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.userData.skinSlot = slot;
+  return mesh;
+}
+
+function makeDecal(w: number, h: number, x: number, y: number, z: number): THREE.Mesh {
+  const mat = new THREE.MeshStandardMaterial({
+    transparent: true,
+    roughness: 0.62,
+    metalness: 0.04,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  mesh.name = "skin-decal";
+  mesh.userData.skinSlot = "decal";
+  mesh.position.set(x, y, z);
+  mesh.rotation.y = -Math.PI / 2;
+  mesh.visible = false;
+  return mesh;
 }
 
 function makeNameplate(name: string): THREE.Sprite {

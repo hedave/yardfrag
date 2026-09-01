@@ -29,6 +29,7 @@ import {
 } from "./weapons";
 import type { Arena } from "./world";
 import { BOT_BODIES, PLAYER, PLAYER_HEX, SIGNAL_HEX } from "./palette";
+import { applyViewmodelSkin } from "./skins";
 import { createViewmodel, createYardling, flashYardling, poseYardling } from "./yardling";
 import {
   adsWeight,
@@ -152,6 +153,7 @@ export class Game {
     for (const id of WEAPON_ORDER) {
       const vm = createViewmodel(id);
       vm.visible = false;
+      applyViewmodelSkin(vm, id, this.persist.skins[id]);
       this.camera.add(vm);
       this.models.set(id, vm);
     }
@@ -188,6 +190,9 @@ export class Game {
     this.input.invertY = p.invertY;
     this.sfx.setVolume(p.volume);
     this.hipFov = p.fov;
+    for (const [id, vm] of this.models) {
+      applyViewmodelSkin(vm, id, p.skins[id]);
+    }
   }
 
   private preview(id: MapId): void {
