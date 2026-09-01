@@ -56,6 +56,7 @@ export class Input {
       if (GAME_KEYS.has(e.code)) e.preventDefault();
       if (down) this.keys.add(e.code);
       else this.keys.delete(e.code);
+      if (e.repeat) return;
       if (down && e.code === "Escape") this.pause = true;
       if (down && e.code === "Digit1") this.weap = 0;
       if (down && e.code === "Digit2") this.weap = 1;

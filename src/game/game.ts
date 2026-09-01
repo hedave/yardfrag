@@ -439,6 +439,7 @@ export class Game {
       this.adsLatch = false;
       this.adsAudio = false;
       restockBelt(this.belt);
+      this.ui.hud.dataset.selfpop = "0";
     }
     if (f.mesh) {
       f.mesh.visible = true;
@@ -583,6 +584,7 @@ export class Game {
     this.ui.hud.dataset.gadget = this.belt.id;
     this.ui.hud.dataset.gadgetAmmo = String(this.belt.ammo[this.belt.id]);
     this.ui.hud.dataset.cook = this.belt.cooking ? "1" : "0";
+    this.ui.hud.dataset.cookT = this.belt.cook.toFixed(2);
     this.ui.hud.dataset.lamp = this.lamp.on ? "1" : "0";
     this.ui.hud.dataset.gadgetHeld = this.input.gadgetHeld ? "1" : "0";
     this.ui.hud.dataset.adsBind = "F";
@@ -1245,7 +1247,9 @@ export class Game {
     if (this.belt.cook >= def.cookMax) {
       this.belt.cooking = false;
       this.belt.cook = 0;
-      this.popAt(p.x, p.y + p.eyeH * 0.55, p.z, def.id, p.id);
+      this.ui.banner(def.id === "mulch" ? "COOKED THE TIN" : "JAR BURST");
+      this.ui.hud.dataset.selfpop = "1";
+      this.popAt(p.x, p.y + p.eyeH * 0.55, p.z, def.id, p.id, true);
       return;
     }
     if (this.input.gadgetReleased) this.releaseToss(p);
@@ -1296,7 +1300,14 @@ export class Game {
     }
   }
 
-  private popAt(x: number, y: number, z: number, kind: GadgetId, ownerId: number): void {
+  private popAt(
+    x: number,
+    y: number,
+    z: number,
+    kind: GadgetId,
+    ownerId: number,
+    hand = false,
+  ): void {
     const def = GADGETS[kind];
     const src = this.fighters.find((f) => f.id === ownerId);
     this.fx.blast(x, y, z, kind);
@@ -1305,7 +1316,7 @@ export class Game {
     for (const f of this.fighters) {
       if (!f.alive) continue;
       const chestY = f.y + bodyHeight(f) * 0.55;
-      const dmg = splashDamage(x, y, z, def, f.x, chestY, f.z, f.id === ownerId);
+      const dmg = splashDamage(x, y, z, def, f.x, chestY, f.z, f.id === ownerId && !hand);
       if (dmg <= 0) continue;
       this.hurt(f, dmg, src, def.verb);
       if (f.bot && f.alive) {
