@@ -144,6 +144,28 @@ function slide(
 }
 
 /** Slab ray vs AABB. Returns t along a unit-ish dir; dir should be normalized. */
+/** True when the footed capsule (origin at feet) does not overlap world boxes. */
+export function capsuleClear(
+  px: number,
+  py: number,
+  pz: number,
+  hx: number,
+  hy: number,
+  hz: number,
+  colliders: AABB[],
+): boolean {
+  const minX = px - hx;
+  const maxX = px + hx;
+  const minY = py;
+  const maxY = py + hy * 2;
+  const minZ = pz - hz;
+  const maxZ = pz + hz;
+  for (const b of colliders) {
+    if (overlaps(minX, minY, minZ, maxX, maxY, maxZ, b)) return false;
+  }
+  return true;
+}
+
 export function onGround(
   px: number,
   py: number,

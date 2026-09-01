@@ -27,12 +27,12 @@ npm run preview
 
 ## Play
 
-- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse or F hold · **Jump** Space · **Sprint** Shift
+- **Move** WASD · **Look** mouse (pointer lock) · **Shoot** click · **Sight (ADS)** right-mouse or F hold · **Jump** Space · **Sprint** Shift · **Crouch** Ctrl (hold)
 - **Reload** R · **Weapons** 1 / 2 / 3 or scroll
 - **Scoreboard** Tab · **Pause** Esc
 - First to 20 frags or 6 minutes. Five yardling bots, free-for-all.
 
-Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, open crosshair). Hold RMB to raise the tool onto its yard-iron — a short smoothed motion, not a snap — plant the look, and tighten the cone. Recoil kicks the shot and the look; first shot is honest, follow-ups climb, recovery is something you pull against. Jump, land, and sprint leftover open the cone. Sprint blocks full-accuracy fire; reload and swap drop you out of sight.
+Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, open crosshair). Hold RMB to raise the tool onto its yard-iron — a short smoothed motion, not a snap — plant the look, and tighten the cone. Recoil kicks the shot and the look; first shot is honest, follow-ups climb, recovery is something you pull against. Jump, land, and sprint leftover open the cone. Sprint has weight on the start and stop; it blocks full-accuracy fire until the existing ready delay burns off. Sight cancels sprint. Crouch drops the capsule and eye, slows the step, and can stack with sight. Reload and swap drop you out of sight.
 
 ### Weapons
 
@@ -49,11 +49,11 @@ Hip fire and sight are two different guns: hip is a loose cone (walk bob, yaw, o
 
 ### Settings
 
-Look feel, sight feel (ADS multiplier), field of view, hold vs toggle sight, volume, and invert-Y persist in `localStorage` with career stats (frags, falls, time, matches).
+Look feel, sight feel (ADS multiplier), field of view, hold vs toggle sight, volume, and invert-Y persist in `localStorage` with career stats (frags, falls, time, matches). Settings lists the movement binds: hold Ctrl to crouch, hold Shift to sprint, sight cancels sprint.
 
 ### Mobile
 
-Touch look on the right, joystick on the left, FRAG / jump / run / reload. Desktop is the primary layout.
+Touch look on the right, joystick on the left, FRAG / jump / run / duck / reload. Desktop is the primary layout.
 
 ## Audio
 

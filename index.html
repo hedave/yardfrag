@@ -95,7 +95,7 @@
             <tbody id="board-body"></tbody>
           </table>
         </div>
-        <div id="hint" class="hidden">click the yard to look · RMB or F to sight · Tab for the board</div>
+        <div id="hint" class="hidden">click the yard to look · RMB or F to sight · Ctrl crouch · Shift sprint · Tab for the board</div>
       </div>
 
       <div id="touch" class="hidden">
@@ -107,6 +107,7 @@
         <button type="button" id="btn-ads">SIGHT</button>
         <button type="button" id="btn-jump">UP</button>
         <button type="button" id="btn-sprint">RUN</button>
+        <button type="button" id="btn-crouch">DUCK</button>
         <button type="button" id="btn-reload">RELOAD</button>
         <div id="btn-weps">
           <button type="button" data-weap="0">1</button>
@@ -203,6 +204,12 @@
               <input id="chk-ads-toggle" type="checkbox" />
               Toggle sight (click RMB) instead of hold
             </label>
+            <p class="fine">
+              Hold <strong>Ctrl</strong> to crouch — shorter stance, slower
+              step. Hold <strong>Shift</strong> to sprint. Sight (RMB / F)
+              cancels sprint; leftover sway still taxes the first shots.
+              Crouch and sight can stack.
+            </p>
             <div class="row">
               <button type="button" class="btn" id="btn-settings-back">
                 Back

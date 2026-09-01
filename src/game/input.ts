@@ -4,6 +4,7 @@ export class Input {
   jump = false;
   jumpPressed = false;
   sprint = false;
+  crouch = false;
   firing = false;
   firePressed = false;
   fireReleased = false;
@@ -44,7 +45,8 @@ export class Input {
 
   attach(): void {
     const onKey = (e: KeyboardEvent, down: boolean) => {
-      if (["Space", "Tab"].includes(e.code)) e.preventDefault();
+      // Ctrl+F is browser Find; Ctrl+A/S/D steal crouch-strafe. Eat game keys.
+      if (GAME_KEYS.has(e.code)) e.preventDefault();
       if (down) this.keys.add(e.code);
       else this.keys.delete(e.code);
       if (down && e.code === "Escape") this.pause = true;
@@ -164,6 +166,7 @@ export class Input {
     this.jumpPressed = jumping && !this.jump;
     this.jump = jumping;
     this.sprint = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
+    this.crouch = this.keys.has("ControlLeft") || this.keys.has("ControlRight");
     this.tab = this.keys.has("Tab") || this.keys.has("KeyB");
     this.adsHeld = this.adsMouse || this.adsKey;
     if (this.fireTouch) this.firing = true;
@@ -192,6 +195,7 @@ export class Input {
     const ads = this.touchRoot.querySelector("#btn-ads") as HTMLElement | null;
     const jump = this.touchRoot.querySelector("#btn-jump") as HTMLElement;
     const sprint = this.touchRoot.querySelector("#btn-sprint") as HTMLElement;
+    const crouch = this.touchRoot.querySelector("#btn-crouch") as HTMLElement | null;
     const reload = this.touchRoot.querySelector("#btn-reload") as HTMLElement;
     const pause = this.touchRoot.querySelector("#btn-pause") as HTMLElement;
     const stick = this.touchRoot.querySelector("#joy-stick") as HTMLElement;
@@ -290,6 +294,13 @@ export class Input {
     }, () => {
       this.keys.delete("ShiftLeft");
     });
+    if (crouch) {
+      hold(
+        crouch,
+        () => this.keys.add("ControlLeft"),
+        () => this.keys.delete("ControlLeft"),
+      );
+    }
     hold(reload, () => {
       this.reload = true;
     });
@@ -331,6 +342,25 @@ export class Input {
     stick.style.transform = `translate(${dx * 28}px, ${dy * 28}px)`;
   }
 }
+
+const GAME_KEYS = new Set([
+  "Space",
+  "Tab",
+  "ControlLeft",
+  "ControlRight",
+  "ShiftLeft",
+  "ShiftRight",
+  "KeyW",
+  "KeyA",
+  "KeyS",
+  "KeyD",
+  "KeyF",
+  "KeyR",
+  "KeyB",
+  "Digit1",
+  "Digit2",
+  "Digit3",
+]);
 
 function clamp(n: number, a: number, b: number): number {
   return Math.max(a, Math.min(b, n));
