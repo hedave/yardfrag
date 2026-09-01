@@ -501,6 +501,13 @@ export class Game {
     this.ui.hud.dataset.fov = this.camera.fov.toFixed(1);
     this.ui.hud.dataset.spread = spreadNow.toFixed(4);
     this.ui.hud.dataset.weap = you.weap.id;
+    this.ui.hud.dataset.shape = feel.shape;
+    this.ui.hud.dataset.mag = String(you.weap.mag);
+    this.ui.hud.dataset.sprint = you.sprinting ? "1" : "0";
+    this.ui.hud.dataset.fade = you.weap.sprintFade.toFixed(2);
+    this.ui.hud.dataset.kick = you.recoil.kickP.toFixed(3);
+    this.ui.hud.dataset.charge = you.weap.charge.toFixed(2);
+    this.ui.hud.dataset.ready = you.weap.ready.toFixed(3);
     this.ui.meta(this.timeLeft, you.kills, FRAG_LIMIT);
     this.ui.setScoreboard(this.input.tab || this.boardOn, this.rows(), this.arena!.title);
     this.ui.showHint(this.phase === "playing" && !this.input.locked && !this.input.isTouch());
@@ -542,14 +549,13 @@ export class Game {
     }
     if (this.input.reload) this.startReload(p);
 
-    const wantSprint = this.input.sprint && p.weap.ads < 0.2 && !p.adsWant;
+    const wantSprint =
+      this.input.sprint && p.weap.ads < 0.2 && !p.adsWant && !this.input.firing;
     if (p.sprinting && !wantSprint) {
-      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
       p.weap.sprintFade = 1;
     }
     p.sprinting = wantSprint;
     if (p.sprinting) {
-      p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
       p.weap.sprintFade = 1;
     }
 
@@ -559,17 +565,14 @@ export class Game {
       if (this.input.firing && chargeOk) {
         if (p.sprinting) {
           p.sprinting = false;
-          p.weap.ready = Math.max(p.weap.ready, feel.sprintDelay);
           p.weap.sprintFade = 1;
         }
-        if (p.weap.ready <= 0) {
-          if (!p.weap.charging) {
-            p.weap.charging = true;
-            this.sfx.startCharge();
-            this.chargedSfx = true;
-          }
-          p.weap.charge = Math.min(1, p.weap.charge + dt / def.chargeTime);
+        if (!p.weap.charging) {
+          p.weap.charging = true;
+          this.sfx.startCharge();
+          this.chargedSfx = true;
         }
+        p.weap.charge = Math.min(1, p.weap.charge + dt / def.chargeTime);
       }
       if (this.input.fireReleased && p.weap.charging) this.releaseStake(p);
     } else if (def.auto) {
@@ -859,7 +862,6 @@ export class Game {
       this.chargedSfx = false;
     }
     if (f.weap.mag <= 0 || f.weap.reloading > 0 || f.weap.swap > 0) return;
-    if (f.weap.ready > 0) return;
     const def = WEAPONS.stake;
     f.weap.mag -= 1;
     f.weap.cooldown = fireInterval("stake");
@@ -870,13 +872,10 @@ export class Game {
 
   private tryFire(f: Fighter): void {
     const def = WEAPONS[f.weap.id];
-    const feel = FEEL[f.weap.id];
     if (f.weap.reloading > 0 || f.weap.cooldown > 0 || f.weap.swap > 0) return;
-    if (f.sprinting || f.weap.ready > 0) {
+    if (f.sprinting) {
       f.sprinting = false;
-      f.weap.ready = Math.max(f.weap.ready, feel.sprintDelay);
       f.weap.sprintFade = 1;
-      return;
     }
     if (f.weap.mag <= 0) {
       this.startReload(f);
@@ -917,7 +916,7 @@ export class Game {
       this.sfx.fire(src.weap.id);
       this.ui.muzzleHud();
       const muzzle = new THREE.Vector3(0.12, -0.08, -0.55).applyMatrix4(this.camera.matrixWorld);
-      this.fx.flash(muzzle.x, muzzle.y, muzzle.z);
+      this.fx.flash(src.weap.id, muzzle.x, muzzle.y, muzzle.z);
     }
     let any = false;
     let head = false;
@@ -1072,10 +1071,10 @@ export class Game {
     this.camera.updateProjectionMatrix();
     this.camera.position.set(p.x, p.y + EYE, p.z);
     const plant = adsWeight(p.weap.ads);
-    const roll = -this.lastStrafe * 0.038 * (1 - plant * 0.88) + p.recoil.punchY * 0.42;
+    const roll = -this.lastStrafe * 0.038 * (1 - plant * 0.88);
     this.camera.rotation.set(
-      p.pitch + p.recoil.kickP + p.recoil.punchP,
-      p.yaw + p.recoil.kickY + p.recoil.punchY,
+      p.pitch + p.recoil.kickP,
+      p.yaw + p.recoil.kickY,
       roll,
       "YXZ",
     );
@@ -1185,6 +1184,7 @@ function normAngle(a: number): number {
   return a;
 }
 
+/** Uniform disc in the plane perpendicular to aim — a cone, not a cube. */
 function spreadDir(
   x: number,
   y: number,
@@ -1192,9 +1192,25 @@ function spreadDir(
   spread: number,
 ): { x: number; y: number; z: number } {
   if (spread <= 0) return { x, y, z };
-  const nx = x + (Math.random() * 2 - 1) * spread;
-  const ny = y + (Math.random() * 2 - 1) * spread;
-  const nz = z + (Math.random() * 2 - 1) * spread;
+  const r = Math.sqrt(Math.random()) * spread;
+  const a = Math.random() * Math.PI * 2;
+  const hx = Math.abs(y) < 0.9 ? 0 : 1;
+  const hy = Math.abs(y) < 0.9 ? 1 : 0;
+  let rx = y * 0 - z * hy;
+  let ry = z * hx - x * 0;
+  let rz = x * hy - y * hx;
+  const rl = Math.hypot(rx, ry, rz) || 1;
+  rx /= rl;
+  ry /= rl;
+  rz /= rl;
+  const ux = y * rz - z * ry;
+  const uy = z * rx - x * rz;
+  const uz = x * ry - y * rx;
+  const ca = Math.cos(a) * r;
+  const sa = Math.sin(a) * r;
+  const nx = x + rx * ca + ux * sa;
+  const ny = y + ry * ca + uy * sa;
+  const nz = z + rz * ca + uz * sa;
   const len = Math.hypot(nx, ny, nz) || 1;
   return { x: nx / len, y: ny / len, z: nz / len };
 }
