@@ -222,10 +222,15 @@ function tube(
   segs = 8,
   open = false,
 ): THREE.Mesh {
+  let use = mat;
+  if (open && mat instanceof THREE.MeshStandardMaterial) {
+    use = mat.clone();
+    use.side = THREE.DoubleSide;
+  }
   return add(
     parent,
     new THREE.CylinderGeometry(r0, r1, len, segs, 1, open),
-    mat,
+    use,
     x,
     y,
     z,
@@ -257,72 +262,72 @@ function addArms(
 
 /** Carbine: receiver, barrel that is the muzzle, handguard, mag, stock. Front post at the muzzle. */
 function buildClipper(g: THREE.Group, irons: THREE.Group, m: ToolMats): void {
-  add(g, new THREE.BoxGeometry(0.06, 0.11, 0.28), m.cedar, 0, 0.02, 0.26);
-  add(g, new THREE.BoxGeometry(0.055, 0.15, 0.08), m.cedar, 0, -0.02, 0.38);
-  add(g, new THREE.BoxGeometry(0.05, 0.16, 0.07), m.cedar, 0, -0.14, 0.06, 0.38);
-  add(g, new THREE.BoxGeometry(0.078, 0.1, 0.3), m.tin, 0, 0.068, -0.02);
-  add(g, new THREE.BoxGeometry(0.018, 0.036, 0.1), m.clay, 0.044, 0.09, -0.02);
-  add(g, new THREE.BoxGeometry(0.05, 0.18, 0.09), m.clay, 0, -0.12, -0.06);
-  add(g, new THREE.BoxGeometry(0.048, 0.05, 0.08), m.clay, 0, -0.22, -0.04);
-  add(g, new THREE.BoxGeometry(0.07, 0.068, 0.22), m.cedar, 0, 0.055, -0.28);
-  tube(g, 0.016, 0.016, 0.34, m.tin, 0, 0.07, -0.55);
-  tube(g, 0.02, 0.017, 0.028, m.tin, 0, 0.07, -0.72);
-  muzzleAt(g, 0, 0.07, -0.736);
+  add(g, new THREE.BoxGeometry(0.062, 0.12, 0.3), m.cedar, 0, 0.0, 0.28);
+  add(g, new THREE.BoxGeometry(0.058, 0.16, 0.08), m.cedar, 0, -0.03, 0.4);
+  add(g, new THREE.BoxGeometry(0.05, 0.17, 0.07), m.cedar, 0, -0.15, 0.07, 0.4);
+  add(g, new THREE.BoxGeometry(0.04, 0.03, 0.09), m.tin, 0, -0.08, 0.04);
+  add(g, new THREE.BoxGeometry(0.08, 0.09, 0.28), m.tin, 0, 0.04, -0.02);
+  add(g, new THREE.BoxGeometry(0.02, 0.032, 0.1), m.clay, 0.046, 0.055, -0.02);
+  add(g, new THREE.BoxGeometry(0.055, 0.2, 0.1), m.clay, 0, -0.12, -0.05);
+  add(g, new THREE.BoxGeometry(0.052, 0.05, 0.09), m.clay, 0, -0.23, -0.03);
+  add(g, new THREE.BoxGeometry(0.074, 0.064, 0.24), m.cedar, 0, 0.038, -0.28);
+  tube(g, 0.019, 0.018, 0.36, m.tin, 0, 0.05, -0.56);
+  tube(g, 0.024, 0.02, 0.03, m.tin, 0, 0.05, -0.74);
+  add(g, new THREE.BoxGeometry(0.028, 0.03, 0.03), m.iron, 0, 0.078, -0.74);
+  muzzleAt(g, 0, 0.05, -0.756);
 
-  add(irons, new THREE.BoxGeometry(0.078, 0.02, 0.04), m.cedar, 0, 0.128, -0.16);
-  const rearL = add(irons, new THREE.BoxGeometry(0.014, 0.05, 0.014), m.iron, -0.028, 0.15, -0.16);
-  const rearR = rearL.clone();
-  rearR.position.x = 0.028;
-  irons.add(rearR);
-  add(irons, new THREE.BoxGeometry(0.07, 0.01, 0.014), m.iron, 0, 0.122, -0.16);
-  add(irons, new THREE.BoxGeometry(0.012, 0.048, 0.012), m.iron, 0, 0.108, -0.72);
-  add(irons, new THREE.SphereGeometry(0.011, 6, 6), m.clay, 0, 0.136, -0.72);
-  addArms(g, m, [0, -0.14, 0.06], [0, 0.02, -0.28]);
+  add(irons, new THREE.BoxGeometry(0.012, 0.046, 0.012), m.iron, -0.026, 0.112, -0.14);
+  add(irons, new THREE.BoxGeometry(0.012, 0.046, 0.012), m.iron, 0.026, 0.112, -0.14);
+  add(irons, new THREE.BoxGeometry(0.064, 0.008, 0.012), m.iron, 0, 0.092, -0.14);
+  add(irons, new THREE.BoxGeometry(0.01, 0.05, 0.01), m.iron, 0, 0.1, -0.74);
+  add(irons, new THREE.SphereGeometry(0.01, 6, 6), m.clay, 0, 0.128, -0.74);
+  addArms(g, m, [0, -0.15, 0.07], [0, 0.01, -0.28]);
 }
 
 /** Shotgun: receiver, pump, mag tube, barrel, stock. Muzzle is the tube end. Bead on a rib. */
 function buildHose(g: THREE.Group, irons: THREE.Group, m: ToolMats): void {
-  add(g, new THREE.BoxGeometry(0.07, 0.12, 0.32), m.cedar, 0, -0.02, 0.22);
-  add(g, new THREE.BoxGeometry(0.065, 0.16, 0.08), m.cedar, 0, -0.06, 0.36);
-  add(g, new THREE.BoxGeometry(0.055, 0.15, 0.075), m.cedar, 0, -0.16, 0.05, 0.4);
-  add(g, new THREE.BoxGeometry(0.09, 0.1, 0.22), m.tin, 0, 0.02, -0.02);
-  add(g, new THREE.BoxGeometry(0.04, 0.05, 0.1), m.tin, 0, -0.08, 0.02);
-  tube(g, 0.018, 0.018, 0.5, m.tin, 0, -0.018, -0.38);
-  tube(g, 0.022, 0.02, 0.56, m.tin, 0, 0.028, -0.42);
-  add(g, new THREE.BoxGeometry(0.088, 0.09, 0.18), m.cedar, 0, -0.02, -0.28);
-  tube(g, 0.028, 0.028, 0.024, m.iron, 0, 0.028, -0.58);
-  tube(g, 0.024, 0.021, 0.03, m.tin, 0, 0.028, -0.7);
-  muzzleAt(g, 0, 0.028, -0.716);
+  add(g, new THREE.BoxGeometry(0.074, 0.13, 0.34), m.cedar, 0, -0.03, 0.24);
+  add(g, new THREE.BoxGeometry(0.07, 0.17, 0.09), m.cedar, 0, -0.07, 0.38);
+  add(g, new THREE.BoxGeometry(0.055, 0.16, 0.075), m.cedar, 0, -0.17, 0.06, 0.42);
+  add(g, new THREE.BoxGeometry(0.092, 0.08, 0.2), m.tin, 0, 0.0, -0.02);
+  add(g, new THREE.BoxGeometry(0.042, 0.055, 0.1), m.tin, 0, -0.09, 0.02);
+  tube(g, 0.02, 0.02, 0.52, m.tin, 0, -0.03, -0.38);
+  tube(g, 0.026, 0.024, 0.58, m.tin, 0, 0.02, -0.42);
+  add(g, new THREE.BoxGeometry(0.1, 0.1, 0.2), m.cedar, 0, -0.028, -0.28);
+  add(g, new THREE.BoxGeometry(0.104, 0.04, 0.04), m.iron, 0, -0.028, -0.2);
+  add(g, new THREE.BoxGeometry(0.104, 0.04, 0.04), m.iron, 0, -0.028, -0.36);
+  tube(g, 0.03, 0.03, 0.028, m.iron, 0, 0.02, -0.58);
+  tube(g, 0.028, 0.024, 0.032, m.tin, 0, 0.02, -0.71);
+  muzzleAt(g, 0, 0.02, -0.728);
 
-  add(irons, new THREE.BoxGeometry(0.012, 0.008, 0.52), m.iron, 0, 0.052, -0.42);
-  add(irons, new THREE.SphereGeometry(0.012, 6, 6), m.clay, 0, 0.061, -0.7);
-  add(irons, new THREE.BoxGeometry(0.02, 0.016, 0.02), m.iron, 0, 0.06, -0.12);
-  addArms(g, m, [0, -0.16, 0.05], [0, -0.02, -0.28]);
+  add(irons, new THREE.BoxGeometry(0.014, 0.008, 0.54), m.iron, 0, 0.048, -0.42);
+  add(irons, new THREE.SphereGeometry(0.013, 6, 6), m.clay, 0, 0.061, -0.71);
+  addArms(g, m, [0, -0.17, 0.06], [0, -0.03, -0.28]);
 }
 
 /** Long gun: stock, receiver, mag, long barrel, muzzle brake, optic you sight through. */
 function buildStake(g: THREE.Group, irons: THREE.Group, m: ToolMats): void {
-  add(g, new THREE.BoxGeometry(0.06, 0.1, 0.34), m.cedar, 0, -0.02, 0.22);
-  add(g, new THREE.BoxGeometry(0.055, 0.14, 0.08), m.cedar, 0, -0.04, 0.38);
-  add(g, new THREE.BoxGeometry(0.058, 0.06, 0.16), m.cedar, 0, 0.04, 0.18);
-  add(g, new THREE.BoxGeometry(0.048, 0.15, 0.065), m.cedar, 0, -0.15, 0.04, 0.32);
-  add(g, new THREE.BoxGeometry(0.07, 0.08, 0.28), m.tin, 0, 0.02, -0.06);
-  add(g, new THREE.BoxGeometry(0.045, 0.14, 0.08), m.clay, 0, -0.1, -0.04);
-  add(g, new THREE.BoxGeometry(0.055, 0.048, 0.2), m.cedar, 0, 0.015, -0.3);
-  tube(g, 0.015, 0.014, 0.8, m.tin, 0, 0.02, -0.68);
-  tube(g, 0.022, 0.018, 0.05, m.tin, 0, 0.02, -1.08);
-  add(g, new THREE.BoxGeometry(0.036, 0.01, 0.04), m.iron, 0, 0.028, -1.08);
-  muzzleAt(g, 0, 0.02, -1.108);
+  add(g, new THREE.BoxGeometry(0.064, 0.11, 0.36), m.cedar, 0, -0.03, 0.24);
+  add(g, new THREE.BoxGeometry(0.06, 0.16, 0.09), m.cedar, 0, -0.06, 0.4);
+  add(g, new THREE.BoxGeometry(0.06, 0.07, 0.18), m.cedar, 0, 0.04, 0.16);
+  add(g, new THREE.BoxGeometry(0.05, 0.16, 0.07), m.cedar, 0, -0.16, 0.05, 0.34);
+  add(g, new THREE.BoxGeometry(0.078, 0.09, 0.3), m.tin, 0, 0.015, -0.08);
+  add(g, new THREE.BoxGeometry(0.05, 0.16, 0.09), m.clay, 0, -0.12, -0.04);
+  add(g, new THREE.BoxGeometry(0.06, 0.05, 0.22), m.cedar, 0, 0.01, -0.32);
+  tube(g, 0.017, 0.015, 0.78, m.tin, 0, 0.018, -0.7);
+  tube(g, 0.026, 0.02, 0.06, m.tin, 0, 0.018, -1.08);
+  add(g, new THREE.BoxGeometry(0.04, 0.012, 0.05), m.iron, 0, 0.03, -1.08);
+  muzzleAt(g, 0, 0.018, -1.112);
 
-  add(g, new THREE.BoxGeometry(0.03, 0.038, 0.036), m.iron, 0, 0.055, -0.24);
-  add(g, new THREE.BoxGeometry(0.03, 0.038, 0.036), m.iron, 0, 0.055, -0.4);
-  tube(g, 0.04, 0.04, 0.22, m.tin, 0, 0.086, -0.34, 10, true);
-  tube(g, 0.032, 0.032, 0.21, m.bore, 0, 0.086, -0.34, 10, true);
-  tube(g, 0.048, 0.042, 0.04, m.tin, 0, 0.086, -0.45, 10);
-  add(irons, new THREE.TorusGeometry(0.034, 0.007, 8, 16), m.iron, 0, 0.086, -0.23);
-  add(irons, new THREE.TorusGeometry(0.03, 0.005, 8, 14), m.bore, 0, 0.086, -0.23);
-  add(irons, new THREE.TorusGeometry(0.04, 0.006, 8, 16), m.iron, 0, 0.086, -0.45);
-  addArms(g, m, [0, -0.15, 0.04], [0, 0, -0.3]);
+  add(g, new THREE.BoxGeometry(0.014, 0.034, 0.045), m.iron, 0.046, 0.06, -0.38);
+  add(g, new THREE.BoxGeometry(0.014, 0.034, 0.045), m.iron, -0.046, 0.06, -0.38);
+  add(g, new THREE.BoxGeometry(0.014, 0.034, 0.045), m.iron, 0.046, 0.06, -0.54);
+  add(g, new THREE.BoxGeometry(0.014, 0.034, 0.045), m.iron, -0.046, 0.06, -0.54);
+  tube(irons, 0.05, 0.05, 0.3, m.tin, 0, 0.086, -0.48, 12, true);
+  tube(irons, 0.042, 0.042, 0.29, m.bore, 0, 0.086, -0.48, 12, true);
+  tube(irons, 0.056, 0.05, 0.035, m.tin, 0, 0.086, -0.33, 12, true);
+  tube(irons, 0.06, 0.052, 0.045, m.tin, 0, 0.086, -0.63, 12, true);
+  addArms(g, m, [0, -0.16, 0.05], [0, 0.0, -0.32]);
 }
 
 function makeNameplate(name: string): THREE.Sprite {
